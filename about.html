@@ -9,7 +9,7 @@
 <body>
   <header class="site-header">
     <nav class="nav">
-      <a class="brand" href="index.html">Blackbird</a>
+      <a class="brand" href="index.html"><img class="brand-logo" src="assets/blackbird.svg" alt="Blackbird logo" width="28" height="28" /> Blackbird</a>
       <ul>
         <li><a href="index.html">Portfolio</a></li>
         <li><a class="active" href="about.html">About</a></li>
@@ -19,16 +19,40 @@
   </header>
 
   <main>
-    <h1>About</h1>
-    <p class="lede">
-      Replace this with a couple of paragraphs about yourself — what you do,
-      what you're into, and what people should know before they reach out.
-    </p>
-    <p>
-      Find me elsewhere:
-      <a href="#">GitHub</a> ·
-      <a href="#">Email</a>
-    </p>
+    <section id="about" class="hero">
+      <img class="avatar" src="assets/blackbird.svg" alt="Illustration of a blackbird in flight against a night sky" width="120" height="120" />
+      <div>
+        <h1>About</h1>
+        <p class="lede">
+          I'm Blackbird — an anonymous maker of small browser games and toys.
+          I like ideas that fit in a single weekend and run with zero installs.
+        </p>
+      </div>
+    </section>
+
+    <section id="story">
+      <h2>What I'm about</h2>
+      <p>
+        Most of my projects start as a "what if" — what if time only moved when you did,
+        what if your gun was also your engine, what if a puzzle grew like a garden. I build
+        the smallest version that answers the question, ship it to the browser, and move on
+        to the next one. No frameworks unless a game truly needs them; a lot of it is just
+        canvas and plain JavaScript.
+      </p>
+      <p>
+        When something turns out to be more fun than expected, it graduates to the
+        <a href="games/index.html">games page</a>. Everything there is playable right now,
+        in this tab, on desktop or phone.
+      </p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>The best way to see what I'm working on is GitHub:</p>
+      <p>
+        <a href="#" target="_blank" rel="noopener">GitHub →</a>
+      </p>
+    </section>
   </main>
 
   <footer>&copy; 2026 Blackbird</footer>
