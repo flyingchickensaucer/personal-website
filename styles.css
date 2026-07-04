@@ -15,9 +15,11 @@
   /* — Rules & grid tuning (kept faint on purpose) — */
   --rule:        rgba(201,162,78,0.38);   /* gilt hairline frame */
   --rule-soft:   rgba(201,162,78,0.16);   /* inner double-rule */
-  --grid-ra:     rgba(110,167,157,0.10);  /* verdigris meridians (vertical) */
-  --grid-dec:    rgba(110,167,157,0.07);  /* verdigris parallels (horizontal) */
-  --ecliptic:    rgba(201,162,78,0.10);   /* single curved ecliptic line */
+  --grid-ra:     rgba(110,167,157,0.13);  /* verdigris meridians (vertical) */
+  --grid-dec:    rgba(110,167,157,0.10);  /* verdigris parallels (horizontal) */
+  --grid-fine:   rgba(110,167,157,0.05);  /* finer sub-grid (graph-paper density) */
+  --ecliptic:    rgba(201,162,78,0.14);   /* gilt ecliptic diagonal */
+  --meridian-2:  rgba(110,167,157,0.12);  /* extra verdigris chart diagonals */
 
   /* — Type — */
   --font-display: "Marcellus", "Trajan Pro", Georgia, "Times New Roman", serif;
@@ -26,7 +28,7 @@
   --font-mono:    ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
 
   /* — Metrics — */
-  --maxw:        820px;
+  --maxw:        1080px;
   --frame-inset: clamp(0.75rem, 2.4vw, 2rem);  /* plate distance from viewport edge */
   --pad-x:       clamp(1.1rem, 4vw, 2.6rem);   /* content inner padding */
   --focus:       var(--gilt-bright);
@@ -47,14 +49,19 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   background-color: var(--void);
-  /* Chart paper: faint RA meridians + DEC parallels + a single curved ecliptic */
+  /* Chart paper: a fine sub-grid under the RA/DEC grid, crossed by three
+     faint chart diagonals — reads like a plotted, written-on star map. */
   background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 39px, var(--grid-fine) 39px, var(--grid-fine) 40px),
+    repeating-linear-gradient(0deg, transparent 0, transparent 39px, var(--grid-fine) 39px, var(--grid-fine) 40px),
     repeating-linear-gradient(90deg, transparent 0, transparent 79px, var(--grid-ra) 79px, var(--grid-ra) 80px),
     repeating-linear-gradient(0deg, transparent 0, transparent 79px, var(--grid-dec) 79px, var(--grid-dec) 80px),
-    linear-gradient(-12deg, transparent calc(50% - 0.5px), var(--ecliptic) 50%, transparent calc(50% + 0.5px));
-  background-attachment: fixed, fixed, fixed;
-  background-repeat: repeat, repeat, no-repeat;
-  background-size: 80px 80px, 80px 80px, 100% 100%;
+    linear-gradient(-12deg, transparent calc(50% - 0.5px), var(--ecliptic) 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(7deg, transparent calc(27% - 0.5px), var(--meridian-2) 27%, transparent calc(27% + 0.5px)),
+    linear-gradient(-6deg, transparent calc(73% - 0.5px), var(--meridian-2) 73%, transparent calc(73% + 0.5px));
+  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed, fixed;
+  background-repeat: repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 40px 40px, 40px 40px, 80px 80px, 80px 80px, 100% 100%, 100% 100%, 100% 100%;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -121,11 +128,7 @@ a:hover { color: var(--gilt-bright); text-decoration: underline; text-underline-
    NAV (.masthead / .chart-nav / .seal / .seal-mark / .nav-links / .active)
    ====================================================================== */
 .masthead {
-  position: sticky;
-  top: 0;
-  background: rgba(8, 11, 24, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* Scrolls away with the page (was position: sticky, which kept it pinned). */
   border-bottom: 1px solid var(--rule-soft);
 }
 
@@ -161,19 +164,21 @@ a:hover { color: var(--gilt-bright); text-decoration: underline; text-underline-
 
 .nav-links {
   display: flex;
-  gap: clamp(0.9rem, 3vw, 1.6rem);
+  gap: clamp(0.15rem, 1.2vw, 0.6rem);
   list-style: none;
   margin: 0;
   padding: 0;
   flex-wrap: wrap;
 }
 .nav-links a {
+  display: inline-block;
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: lowercase;
   color: var(--faded-ink);
-  padding-block: 0.3rem;
+  /* generous hit area — the links used to be tiny and hard to click */
+  padding: 0.55rem 0.7rem;
 }
 .nav-links a:hover { color: var(--star-ink); text-decoration: none; }
 
@@ -184,9 +189,9 @@ a:hover { color: var(--gilt-bright); text-decoration: underline; text-underline-
 .nav-links a.active::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
+  left: 0.7rem;
+  right: 0.7rem;
+  bottom: 0.32rem;
   height: 2px;
   background: var(--gilt);
 }
@@ -242,7 +247,7 @@ p {
   font-size: clamp(1.05rem, 1.4vw, 1.2rem);
   line-height: 1.6;
   color: var(--star-ink);
-  max-width: 62ch;
+  max-width: 70ch;
   margin: 0 0 1rem;
 }
 
@@ -251,7 +256,7 @@ p {
   font-style: italic;
   color: var(--star-ink);
   opacity: 0.92;
-  max-width: 60ch;
+  max-width: 66ch;
   margin: 0 0 1.25rem;
 }
 
@@ -276,7 +281,7 @@ p {
 .hero:has(.chart),
 .hero.hero--home {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   gap: clamp(1.5rem, 5vw, 3.5rem);
   align-items: center;
 }
@@ -398,6 +403,28 @@ p {
   font-family: var(--font-mono);
   font-size: 13px;
   fill: var(--faded-ink);
+}
+
+/* Instrument time-panel beneath the chart: three timescales */
+.chart-times {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--rule-soft);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faded-ink);
+}
+.chart-times span { display: flex; flex-direction: column; gap: 0.22rem; }
+.chart-times b {
+  color: var(--star-ink);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
 }
 
 @keyframes draw-in {
@@ -655,3 +682,4 @@ p {
     animation: none;
   }
 }
+

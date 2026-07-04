@@ -32,9 +32,9 @@
         <div>
           <p class="eyebrow">CORVUS · R.A. 12h 27m · DEC −18°</p>
           <h1 class="plate-title">Blackbird</h1>
-          <p class="lede">Uh, welcome to my page, I suppose. Feel free to make yourself comfortable.</p>
+          <p class="lede">If you're wondering why it says 4 stars when there are 5 visible, it's cause it looks cooler this way.</p>
           <p class="readout">⌖ 4 stars · mag 2.6 · visible year-round</p>
-          <p>I make small things. And less small things, but I'm not as good at the latter.</p>
+          <p>I make small things. And unsmall things, but I'm not as good at the latter.</p>
           <div class="btn-row">
             <a class="chart-btn" href="games/index.html">See my things <span>→</span></a>
             <a class="chart-btn chart-btn--ghost" href="about.html">Read the log</a>
@@ -42,29 +42,74 @@
         </div>
         <div class="chart">
           <svg class="chart-svg" viewBox="0 0 440 320" aria-hidden="true">
-            <!-- Corvus asterism: ε–γ–δ–β–ε plus the α spur -->
-            <path class="chart-line" d="M96,150 L210,86 L330,120 L250,236 Z" fill="none" />
-            <path class="chart-line" d="M150,232 L96,150" fill="none" />
+            <!-- Corvus, "the Sail": the four-star quadrilateral, edges
+                 δ–γ–ε–β (Algorab–Gienah–Minkar–Kraz). Positions projected
+                 from J2000 RA/Dec at equal scale. α (Alchiba, mag 4) lies
+                 outside the figure and is omitted. -->
+            <path class="chart-line" d="M161,42 L273,76 L319,249 L125,276 Z" fill="none" />
 
-            <!-- Stars (radius encodes magnitude); Gienah (γ) is the star of note -->
-            <circle class="chart-star" cx="96"  cy="150" r="3.4" />
-            <circle class="chart-star chart-star--note" cx="210" cy="86"  r="5" />
-            <circle class="chart-star" cx="330" cy="120" r="4.2" />
-            <circle class="chart-star" cx="250" cy="236" r="4" />
-            <circle class="chart-star" cx="150" cy="232" r="2.6" />
+            <!-- Stars: radius encodes magnitude (brighter = larger).
+                 Gienah (γ, mag 2.59) is the brightest — the star of note. -->
+            <circle class="chart-star chart-star--note" cx="273" cy="76"  r="6" />   <!-- γ Gienah  2.59 -->
+            <circle class="chart-star" cx="125" cy="276" r="5.4" />                  <!-- β Kraz    2.65 -->
+            <circle class="chart-star" cx="161" cy="42"  r="4.4" />                  <!-- δ Algorab 2.95 -->
+            <circle class="chart-star" cx="319" cy="249" r="4.2" />                  <!-- ε Minkar  3.02 -->
 
             <!-- Greek Bayer designations -->
-            <text class="chart-label" x="72"  y="146">ε</text>
-            <text class="chart-label" x="216" y="76">γ</text>
-            <text class="chart-label" x="342" y="116">δ</text>
-            <text class="chart-label" x="260" y="252">β</text>
-            <text class="chart-label" x="132" y="248">α</text>
+            <text class="chart-label" x="283" y="72">γ</text>
+            <text class="chart-label" x="101" y="286">β</text>
+            <text class="chart-label" x="140" y="38">δ</text>
+            <text class="chart-label" x="329" y="252">ε</text>
           </svg>
+          <div class="chart-times">
+            <span>Solar <b id="t-sol">--:--:--</b></span>
+            <span>Sidereal <b id="t-sid">--:--:--</b></span>
+            <span>Dynamical <b id="t-dyn">--:--:--</b></span>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="colophon">© 2026 Blackbird · R.A. 12h 27m / DEC −18°</footer>
   </div>
+
+  <script>
+    (function () {
+      // Longitude in degrees East (West negative). 0 = Greenwich, so the
+      // sidereal readout is GMST. Set this to your longitude for true LST.
+      var LON = 0;
+      // Terrestrial (Dynamical) Time offset from UTC, in seconds:
+      // TT = TAI + 32.184s, and TAI − UTC = 37 leap seconds (since 2017).
+      var TT_MINUS_UTC = 69.184;
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function clockOf(date) {
+        return pad(date.getUTCHours()) + ':' + pad(date.getUTCMinutes()) + ':' + pad(date.getUTCSeconds());
+      }
+      function hms(hours) {
+        hours = ((hours % 24) + 24) % 24;
+        var h = Math.floor(hours);
+        var m = Math.floor((hours - h) * 60);
+        var s = Math.floor((((hours - h) * 60) - m) * 60);
+        return pad(h) + ':' + pad(m) + ':' + pad(s);
+      }
+      function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+      function tick() {
+        var now = new Date();
+        // Solar — mean solar time (UTC).
+        set('t-sol', clockOf(now));
+        // Sidereal — Greenwich Mean Sidereal Time (+ longitude for local).
+        var jd = now.getTime() / 86400000 + 2440587.5;
+        var d = jd - 2451545.0;
+        var gmst = 18.697374558 + 24.06570982441908 * d;
+        set('t-sid', hms(gmst + LON / 15));
+        // Dynamical — Terrestrial Time.
+        set('t-dyn', clockOf(new Date(now.getTime() + TT_MINUS_UTC * 1000)));
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
 </body>
 </html>
