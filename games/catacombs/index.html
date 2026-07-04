@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Catacombs of Yendor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a10;
+    --panel: #12131c;
+    --ink: #d8d8e8;
+    --dim: #6b6b80;
+    --gold: #f4c542;
+    --hp: #e0506a;
+    --xp: #5ec2e0;
+    --accent: #b48cff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  #wrap { display: flex; height: 100vh; width: 100vw; }
+  #stage { position: relative; flex: 1; min-width: 0; background: #000; }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+  /* Sidebar */
+  #side {
+    width: 280px; flex: none; background: var(--panel);
+    border-left: 1px solid #1f2030; display: flex; flex-direction: column;
+    padding: 16px; gap: 14px; overflow: hidden;
+  }
+  #side h1 {
+    margin: 0; font-size: 16px; letter-spacing: 0.08em; font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stat { font-size: 12px; }
+  .stat .label { color: var(--dim); display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .bar { height: 10px; border-radius: 6px; background: #1d1e2b; overflow: hidden; border: 1px solid #262738; }
+  .bar > i { display: block; height: 100%; transition: width 0.2s ease; }
+  .hpbar > i { background: linear-gradient(90deg, #ff7a8a, var(--hp)); }
+  .xpbar > i { background: linear-gradient(90deg, #7fe0ff, var(--xp)); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 12px; }
+  .grid2 .k { color: var(--dim); }
+  .grid2 .v { text-align: right; font-weight: 600; }
+  .v.gold { color: var(--gold); }
+  .v.acc { color: var(--accent); }
+
+  #log {
+    flex: 1; min-height: 0; overflow-y: auto; font-size: 11.5px; line-height: 1.55;
+    border-top: 1px solid #1f2030; padding-top: 10px; scrollbar-width: thin;
+  }
+  #log p { margin: 0 0 2px; color: var(--dim); }
+  #log p.new { color: var(--ink); }
+  #log .c-hit { color: #ff9a76; }
+  #log .c-good { color: #7fe07f; }
+  #log .c-gold { color: var(--gold); }
+  #log .c-bad { color: var(--hp); }
+  #log .c-magic { color: var(--accent); }
+
+  #help { font-size: 10.5px; color: var(--dim); line-height: 1.6; border-top: 1px solid #1f2030; padding-top: 10px; }
+  #help b { color: var(--ink); }
+
+  /* Overlays */
+  .overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(20,16,32,0.85), rgba(5,5,10,0.96));
+    text-align: center; z-index: 10; padding: 20px;
+  }
+  .overlay.hidden { display: none; }
+  .card { max-width: 540px; }
+  .card .title {
+    font-size: 44px; font-weight: 800; letter-spacing: 0.04em; margin: 0 0 6px;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 40px rgba(180,140,255,0.25);
+  }
+  .card .sub { color: var(--dim); font-size: 13px; line-height: 1.7; margin: 0 0 22px; }
+  .card .keys { color: var(--ink); font-size: 13px; line-height: 1.9; margin: 0 0 24px; }
+  .card .keys kbd {
+    background: #1d1e2b; border: 1px solid #33344a; border-bottom-width: 2px;
+    border-radius: 5px; padding: 1px 7px; font-family: inherit; color: var(--ink); margin: 0 1px;
+  }
+  .btn {
+    display: inline-block; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
+    color: #1a1326; background: linear-gradient(90deg, var(--accent), var(--gold));
+    border: none; border-radius: 10px; padding: 12px 28px; letter-spacing: 0.05em;
+    transition: transform 0.08s, box-shadow 0.2s; box-shadow: 0 8px 30px rgba(180,140,255,0.25);
+  }
+  .btn:hover { box-shadow: 0 10px 40px rgba(244,197,66,0.35); }
+  .btn:active { transform: scale(0.96); }
+  .big { font-size: 56px; }
+  .win .title { background: linear-gradient(90deg, #ffe169, #7fe0ff); -webkit-background-clip: text; background-clip: text; }
+  .dead .title { background: linear-gradient(90deg, #ff5a6e, #b48cff); -webkit-background-clip: text; background-clip: text; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="c"></canvas>
+
+    <!-- Title -->
+    <div id="titleScreen" class="overlay">
+      <div class="card">
+        <p class="title">CATACOMBS<br/>OF YENDOR</p>
+        <p class="sub">Descend eight floors of a procedurally‑generated dungeon.<br/>Slay what lurks in the dark, gather gold and gear, and seize<br/>the <span style="color:var(--gold)">Amulet of Yendor</span> from the deepest pit.</p>
+        <p class="keys">
+          <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows — move &amp; attack<br/>
+          <kbd>Space</kbd> wait a turn &nbsp;·&nbsp; <kbd>&gt;</kbd> descend stairs<br/>
+          <kbd>1</kbd> quaff a potion &nbsp;·&nbsp; walk onto loot to grab it
+        </p>
+        <button class="btn" id="startBtn">ENTER THE DARK</button>
+      </div>
+    </div>
+
+    <!-- Death -->
+    <div id="deadScreen" class="overlay hidden dead">
+      <div class="card">
+        <p class="title big">YOU DIED</p>
+        <p class="sub" id="deadMsg"></p>
+        <button class="btn" id="retryBtn">TRY AGAIN</button>
+      </div>
+    </div>
+
+    <!-- Win -->
+    <div id="winScreen" class="overlay hidden win">
+      <div class="card">
+        <p class="title big">VICTORY</p>
+        <p class="sub" id="winMsg"></p>
+        <button class="btn" id="winBtn">PLAY AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <aside id="side">
+    <h1>⚔ CATACOMBS</h1>
+    <div class="stat">
+      <div class="label"><span>HEALTH</span><span id="hpText">24 / 24</span></div>
+      <div class="bar hpbar"><i id="hpFill" style="width:100%"></i></div>
+    </div>
+    <div class="stat">
+      <div class="label"><span>EXPERIENCE</span><span id="xpText">0 / 10</span></div>
+      <div class="bar xpbar"><i id="xpFill" style="width:0%"></i></div>
+    </div>
+    <div class="grid2">
+      <div class="k">Level</div><div class="v acc" id="sLevel">1</div>
+      <div class="k">Depth</div><div class="v" id="sDepth">1</div>
+      <div class="k">Attack</div><div class="v" id="sAtk">4</div>
+      <div class="k">Defense</div><div class="v" id="sDef">1</div>
+      <div class="k">Weapon</div><div class="v" id="sWeap">fists</div>
+      <div class="k">Armor</div><div class="v" id="sArmor">rags</div>
+      <div class="k">Gold</div><div class="v gold" id="sGold">0</div>
+      <div class="k">Potions</div><div class="v" id="sPot">0</div>
+    </div>
+    <div id="log"></div>
+    <div id="help">
+      <b>Move</b> WASD / arrows · <b>Wait</b> Space<br/>
+      <b>Descend</b> &gt; (on stairs) · <b>Potion</b> 1<br/>
+      Bump enemies to strike. Stay in the light.
+    </div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+//==================================================================
+//  CATACOMBS OF YENDOR — a self-contained turn-based roguelike
+//==================================================================
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// ---- Config ----
+const MAP_W = 64, MAP_H = 44;
+const TILE = 24;                 // base tile size (scaled by camera fit)
+const FOV_RADIUS = 8;
+const DEPTH_GOAL = 8;            // amulet lives here
+
+const T = { WALL: 0, FLOOR: 1, DOOR: 2, STAIRS: 3 };
+
+// ---- RNG ----
+const rnd = (n) => Math.floor(Math.random() * n);
+const randint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const choice = (arr) => arr[rnd(arr.length)];
+const chance = (p) => Math.random() < p;
+
+// ---- Game state ----
+let G = null;     // current game object
+let view = { ox: 0, oy: 0, tile: TILE };
+let floaters = [];   // floating combat text
+let particles = [];
+let shake = 0;
+let running = false;
+
+//------------------------------------------------------------------
+//  ENTITY / MONSTER DEFS
+//------------------------------------------------------------------
+const MONSTERS = [
+  // glyph, name, color, hp, atk, def, xp, minDepth, weight
+  { g:'r', name:'rat',       col:'#9fae8f', hp:5,  atk:2,  def:0, xp:2,  min:1, w:10 },
+  { g:'b', name:'bat',       col:'#b58bd6', hp:6,  atk:3,  def:0, xp:3,  min:1, w:8 },
+  { g:'k', name:'kobold',    col:'#7fbf6f', hp:9,  atk:4,  def:1, xp:5,  min:2, w:9 },
+  { g:'g', name:'goblin',    col:'#69b06b', hp:12, atk:5,  def:1, xp:7,  min:2, w:9 },
+  { g:'s', name:'skeleton',  col:'#d8d8e8', hp:14, atk:6,  def:2, xp:9,  min:3, w:8 },
+  { g:'z', name:'zombie',    col:'#8aa06a', hp:20, atk:6,  def:1, xp:11, min:3, w:6 },
+  { g:'o', name:'orc',       col:'#5fa05f', hp:22, atk:8,  def:3, xp:14, min:4, w:8 },
+  { g:'w', name:'wraith',    col:'#9c7bd6', hp:18, atk:10, def:2, xp:18, min:5, w:6 },
+  { g:'O', name:'ogre',      col:'#cf8f5f', hp:34, atk:12, def:4, xp:26, min:6, w:5 },
+  { g:'T', name:'troll',     col:'#6fae8f', hp:42, atk:14, def:5, xp:34, min:6, w:4 },
+  { g:'V', name:'vampire',   col:'#d65f7b', hp:38, atk:15, def:5, xp:40, min:7, w:4 },
+];
+
+const WEAPONS = [
+  { name:'dagger',    atk:2,  col:'#cfd6e0' },
+  { name:'short sword', atk:4, col:'#cfd6e0' },
+  { name:'mace',      atk:6,  col:'#d8c98f' },
+  { name:'battle axe', atk:9, col:'#e0a05f' },
+  { name:'war hammer', atk:12, col:'#e0805f' },
+  { name:'rune blade', atk:16, col:'#b48cff' },
+];
+const ARMORS = [
+  { name:'leather',   def:2, col:'#b08858' },
+  { name:'chain mail', def:4, col:'#aab0bf' },
+  { name:'plate',     def:7, col:'#cfd6e0' },
+  { name:'dragon scale', def:11, col:'#7fe0a0' },
+];
+
+//------------------------------------------------------------------
+//  MAP GENERATION  (rooms + L-corridors)
+//------------------------------------------------------------------
+function genLevel(depth) {
+  const map = new Array(MAP_W * MAP_H).fill(T.WALL);
+  const seen = new Uint8Array(MAP_W * MAP_H);  // explored
+  const idx = (x, y) => y * MAP_W + x;
+  const rooms = [];
+
+  const carve = (x, y, t) => { if (x>0 && y>0 && x<MAP_W-1 && y<MAP_H-1) map[idx(x,y)] = t; };
+
+  const tryRoom = () => {
+    const w = randint(5, 11), h = randint(4, 8);
+    const x = randint(1, MAP_W - w - 2), y = randint(1, MAP_H - h - 2);
+    const room = { x, y, w, h, cx: (x + (x+w-1))>>1, cy: (y + (y+h-1))>>1 };
+    // overlap check (with 1-tile padding)
+    for (const r of rooms) {
+      if (x <= r.x + r.w && x + w >= r.x && y <= r.y + r.h && y + h >= r.y) return false;
+    }
+    for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) carve(i, j, T.FLOOR);
+    rooms.push(room);
+    return true;
+  };
+
+  let attempts = 0;
+  const targetRooms = 9 + Math.min(6, depth);
+  while (rooms.length < targetRooms && attempts < 400) { tryRoom(); attempts++; }
+
+  const hCorr = (x1, x2, y) => { for (let x = Math.min(x1,x2); x <= Math.max(x1,x2); x++) carve(x, y, T.FLOOR); };
+  const vCorr = (y1, y2, x) => { for (let y = Math.min(y1,y2); y <= Math.max(y1,y2); y++) carve(x, y, T.FLOOR); };
+
+  for (let i = 1; i < rooms.length; i++) {
+    const a = rooms[i - 1], b = rooms[i];
+    if (chance(0.5)) { hCorr(a.cx, b.cx, a.cy); vCorr(a.cy, b.cy, b.cx); }
+    else { vCorr(a.cy, b.cy, a.cx); hCorr(a.cx, b.cx, b.cy); }
+  }
+
+  // place stairs (or amulet on the last floor) in the farthest room
+  const start = rooms[0];
+  let far = rooms[0], bestD = -1;
+  for (const r of rooms) {
+    const d = Math.abs(r.cx - start.cx) + Math.abs(r.cy - start.cy);
+    if (d > bestD) { bestD = d; far = r; }
+  }
+  let amulet = null;
+  if (depth >= DEPTH_GOAL) {
+    amulet = { x: far.cx, y: far.cy };
+  } else {
+    map[idx(far.cx, far.cy)] = T.STAIRS;
+  }
+
+  return { map, seen, rooms, start, far, amulet, idx };
+}
+
+function isWall(L, x, y) {
+  if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return true;
+  return L.map[L.idx(x, y)] === T.WALL;
+}
+function isWalkable(L, x, y) {
+  if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return false;
+  return L.map[L.idx(x, y)] !== T.WALL;
+}
+
+//------------------------------------------------------------------
+//  LINE OF SIGHT (Bresenham) + FOV
+//------------------------------------------------------------------
+function los(L, x0, y0, x1, y1) {
+  let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+  let sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy, x = x0, y = y0;
+  while (true) {
+    if (x === x1 && y === y1) return true;
+    if (!(x === x0 && y === y0) && isWall(L, x, y)) return false;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x += sx; }
+    if (e2 < dx) { err += dx; y += sy; }
+  }
+}
+
+function computeFOV() {
+  const L = G.level, px = G.player.x, py = G.player.y;
+  G.visible = new Set();
+  for (let dy = -FOV_RADIUS; dy <= FOV_RADIUS; dy++) {
+    for (let dx = -FOV_RADIUS; dx <= FOV_RADIUS; dx++) {
+      if (dx*dx + dy*dy > FOV_RADIUS*FOV_RADIUS) continue;
+      const x = px + dx, y = py + dy;
+      if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) continue;
+      if (los(L, px, py, x, y)) {
+        const k = L.idx(x, y);
+        G.visible.add(k);
+        L.seen[k] = 1;
+      }
+    }
+  }
+}
+
+//------------------------------------------------------------------
+//  NEW GAME / NEW LEVEL
+//------------------------------------------------------------------
+function newGame() {
+  G = {
+    player: { x: 0, y: 0, hp: 24, maxhp: 24, atk: 4, def: 1, baseAtk: 4, baseDef: 1,
+              level: 1, xp: 0, xpNext: 10, gold: 0, potions: 1,
+              weapon: { name:'fists', atk:0 }, armor: { name:'rags', def:0 } },
+    depth: 0,
+    monsters: [], items: [],
+    visible: new Set(),
+    level: null,
+    turn: 0,
+    state: 'play',
+  };
+  descend(true);
+  log('You step into the cold, breathing dark…', 'c-magic');
+  log('Floor ' + G.depth + '. Find the stairs <span class="c-gold">&gt;</span> and descend.');
+}
+
+function descend(first) {
+  G.depth++;
+  const L = genLevel(G.depth);
+  G.level = L;
+  G.player.x = L.start.cx; G.player.y = L.start.cy;
+  G.monsters = [];
+  G.items = [];
+  populate(L, G.depth);
+  computeFOV();
+  if (!first) {
+    if (G.level.amulet) log('You descend. The air hums with ancient power…', 'c-magic');
+    else log('You descend to floor ' + G.depth + '. The dark deepens.', 'c-magic');
+  }
+  updateHUD();
+}
+
+function populate(L, depth) {
+  const idx = L.idx;
+  // monsters — skip starting room
+  const pool = MONSTERS.filter(m => m.min <= depth);
+  const nMon = 5 + depth + rnd(4);
+  let placed = 0, guard = 0;
+  while (placed < nMon && guard < 500) {
+    guard++;
+    const r = choice(L.rooms);
+    if (r === L.start) continue;
+    const x = randint(r.x, r.x + r.w - 1), y = randint(r.y, r.y + r.h - 1);
+    if (!isWalkable(L, x, y) || entAt(x, y)) continue;
+    // weighted pick, biased toward stronger as depth grows
+    const def = weightedMonster(pool, depth);
+    G.monsters.push({
+      x, y, g: def.g, name: def.name, col: def.col,
+      hp: def.hp, maxhp: def.hp, atk: def.atk, def: def.def, xp: def.xp,
+      awake: false,
+    });
+    placed++;
+  }
+
+  // items
+  const nItem = 3 + rnd(4);
+  for (let i = 0; i < nItem; i++) {
+    const r = choice(L.rooms);
+    const x = randint(r.x, r.x + r.w - 1), y = randint(r.y, r.y + r.h - 1);
+    if (!isWalkable(L, x, y) || itemAt(x, y) || (x===L.start.cx&&y===L.start.cy)) continue;
+    G.items.push(rollItem(x, y, depth));
+  }
+  // guarantee a potion or two
+  for (let i = 0; i < 2; i++) {
+    const r = choice(L.rooms);
+    const x = randint(r.x, r.x + r.w - 1), y = randint(r.y, r.y + r.h - 1);
+    if (!isWalkable(L, x, y) || itemAt(x, y)) continue;
+    G.items.push({ x, y, kind:'potion', g:'!', col:'#ff7ab0', name:'potion of healing' });
+  }
+
+  // amulet
+  if (L.amulet) {
+    G.items.push({ x: L.amulet.x, y: L.amulet.y, kind:'amulet', g:'*', col:'#ffe169', name:'Amulet of Yendor' });
+  }
+}
+
+function weightedMonster(pool, depth) {
+  // bias: deeper -> weight stronger (higher min) monsters
+  const weighted = pool.map(m => ({ m, w: m.w * (1 + (depth - m.min) * 0.15) }));
+  let total = weighted.reduce((s, e) => s + e.w, 0);
+  let r = Math.random() * total;
+  for (const e of weighted) { r -= e.w; if (r <= 0) return e.m; }
+  return pool[pool.length - 1];
+}
+
+function rollItem(x, y, depth) {
+  const roll = Math.random();
+  if (roll < 0.4) return { x, y, kind:'potion', g:'!', col:'#ff7ab0', name:'potion of healing' };
+  if (roll < 0.62) {
+    const amt = randint(5, 15) + depth * 4;
+    return { x, y, kind:'gold', g:'$', col:'#f4c542', name: amt + ' gold', amt };
+  }
+  if (roll < 0.82) {
+    const tier = Math.min(WEAPONS.length - 1, Math.floor(depth / 1.6) + rnd(2));
+    const w = WEAPONS[tier];
+    return { x, y, kind:'weapon', g:'/', col:w.col, name:w.name, atk:w.atk };
+  }
+  const tier = Math.min(ARMORS.length - 1, Math.floor(depth / 2.2) + rnd(2));
+  const a = ARMORS[tier];
+  return { x, y, kind:'armor', g:'[', col:a.col, name:a.name, def:a.def };
+}
+
+//------------------------------------------------------------------
+//  HELPERS
+//------------------------------------------------------------------
+function entAt(x, y) { return G.monsters.find(m => m.x === x && m.y === y); }
+function itemAt(x, y) { return G.items.find(it => it.x === x && it.y === y); }
+const pAtk = () => G.player.baseAtk + G.player.weapon.atk;
+const pDef = () => G.player.baseDef + G.player.armor.def;
+
+//------------------------------------------------------------------
+//  TURN LOGIC
+//------------------------------------------------------------------
+function playerMove(dx, dy) {
+  if (G.state !== 'play') return;
+  const p = G.player;
+  const nx = p.x + dx, ny = p.y + dy;
+  const m = entAt(nx, ny);
+  if (m) { attack(p, m, true); endTurn(); return; }
+  if (!isWalkable(G.level, nx, ny)) return;
+  p.x = nx; p.y = ny;
+  pickup();
+  endTurn();
+}
+
+function playerWait() { if (G.state==='play') endTurn(); }
+
+function attack(att, def, playerIsAtt) {
+  const a = playerIsAtt ? pAtk() : att.atk;
+  const d = playerIsAtt ? def.def : pDef();
+  const dmg = Math.max(1, a + randint(-1, 2) - d);
+  def.hp -= dmg;
+  if (playerIsAtt) {
+    floater(def.x, def.y, '-' + dmg, '#ff9a76');
+    hitParticles(def.x, def.y, def.col);
+    if (def.hp <= 0) {
+      killMonster(def);
+    } else {
+      log('You hit the <b>' + def.name + '</b> for <span class="c-hit">' + dmg + '</span>.', 'c-hit');
+    }
+  } else {
+    floater(G.player.x, G.player.y, '-' + dmg, '#ff5a6e');
+    shake = Math.min(10, shake + dmg * 0.5);
+    log('The <b>' + att.name + '</b> hits you for <span class="c-bad">' + dmg + '</span>.', 'c-bad');
+    if (G.player.hp <= 0) { G.player.hp = 0; die(att); }
+  }
+}
+
+function killMonster(m) {
+  log('You slay the <b>' + m.name + '</b>! <span class="c-good">+' + m.xp + ' xp</span>', 'c-good');
+  deathParticles(m.x, m.y, m.col);
+  G.monsters = G.monsters.filter(x => x !== m);
+  gainXP(m.xp);
+}
+
+function gainXP(amt) {
+  const p = G.player;
+  p.xp += amt;
+  while (p.xp >= p.xpNext) {
+    p.xp -= p.xpNext;
+    p.level++;
+    p.xpNext = Math.floor(p.xpNext * 1.5 + 5);
+    const hpUp = randint(5, 9);
+    p.maxhp += hpUp; p.hp = p.maxhp;
+    p.baseAtk += 1;
+    if (p.level % 2 === 0) p.baseDef += 1;
+    log('You reach <span class="c-magic">level ' + p.level + '</span>! Max HP +' + hpUp + '.', 'c-magic');
+    floater(p.x, p.y, 'LEVEL UP', '#b48cff');
+  }
+}
+
+function pickup() {
+  const it = itemAt(G.player.x, G.player.y);
+  if (!it) return;
+  const p = G.player;
+  if (it.kind === 'gold') { p.gold += it.amt; log('You pick up <span class="c-gold">' + it.amt + ' gold</span>.', 'c-gold'); }
+  else if (it.kind === 'potion') { p.potions++; log('You find a <span class="c-magic">potion of healing</span>. (press 1)', 'c-magic'); }
+  else if (it.kind === 'weapon') {
+    if (it.atk > p.weapon.atk) { log('You wield the <b>' + it.name + '</b> (+' + it.atk + ' atk).', 'c-good'); p.weapon = { name: it.name, atk: it.atk }; }
+    else { log('You leave the ' + it.name + ' (your ' + p.weapon.name + ' is better).'); return; }
+  }
+  else if (it.kind === 'armor') {
+    if (it.def > p.armor.def) { log('You don the <b>' + it.name + '</b> (+' + it.def + ' def).', 'c-good'); p.armor = { name: it.name, def: it.def }; }
+    else { log('You leave the ' + it.name + ' (your ' + p.armor.name + ' is better).'); return; }
+  }
+  else if (it.kind === 'amulet') { win(); return; }
+  G.items = G.items.filter(x => x !== it);
+  updateHUD();
+}
+
+function quaff() {
+  if (G.state !== 'play') return;
+  const p = G.player;
+  if (p.potions <= 0) { log('You have no potions.'); return; }
+  if (p.hp >= p.maxhp) { log('You are already at full health.'); return; }
+  p.potions--;
+  const heal = Math.floor(p.maxhp * 0.45) + randint(4, 10);
+  p.hp = Math.min(p.maxhp, p.hp + heal);
+  floater(p.x, p.y, '+' + heal, '#7fe07f');
+  log('You quaff a potion. <span class="c-good">+' + heal + ' HP</span>.', 'c-good');
+  endTurn();
+}
+
+function tryDescend() {
+  if (G.state !== 'play') return;
+  if (G.level.map[G.level.idx(G.player.x, G.player.y)] === T.STAIRS) {
+    descend(false);
+  } else {
+    log('There are no stairs here.');
+  }
+}
+
+function endTurn() {
+  G.turn++;
+  monsterTurns();
+  computeFOV();
+  updateHUD();
+}
+
+function monsterTurns() {
+  const L = G.level, p = G.player;
+  for (const m of G.monsters) {
+    const dist = Math.abs(m.x - p.x) + Math.abs(m.y - p.y);
+    if (!m.awake) {
+      if (dist <= FOV_RADIUS && los(L, m.x, m.y, p.x, p.y)) m.awake = true;
+      else continue;
+    }
+    // adjacent? attack
+    if (Math.max(Math.abs(m.x - p.x), Math.abs(m.y - p.y)) === 1) { attack(m, p, false); continue; }
+    // step toward player (greedy, wall/entity-aware)
+    stepToward(m, p);
+  }
+}
+
+function stepToward(m, p) {
+  const L = G.level;
+  let dx = Math.sign(p.x - m.x), dy = Math.sign(p.y - m.y);
+  const opts = [];
+  if (dx && dy) { opts.push([dx, dy], [dx, 0], [0, dy]); }
+  else if (dx) { opts.push([dx, 0], [dx, -1], [dx, 1]); }
+  else if (dy) { opts.push([0, dy], [-1, dy], [1, dy]); }
+  for (const [ox, oy] of opts) {
+    const nx = m.x + ox, ny = m.y + oy;
+    if (nx === p.x && ny === p.y) { attack(m, p, false); return; }
+    if (isWalkable(L, nx, ny) && !entAt(nx, ny)) { m.x = nx; m.y = ny; return; }
+  }
+}
+
+//------------------------------------------------------------------
+//  WIN / LOSE
+//------------------------------------------------------------------
+function die(killer) {
+  G.state = 'dead';
+  running = false;
+  log('Slain by a ' + killer.name + ' on floor ' + G.depth + '.', 'c-bad');
+  document.getElementById('deadMsg').innerHTML =
+    'A <b>' + killer.name + '</b> ends your delve on floor <b>' + G.depth + '</b>.<br/>' +
+    'You reached level <b>' + G.player.level + '</b> and hoarded <span style="color:var(--gold)">' + G.player.gold + ' gold</span>.';
+  setTimeout(() => document.getElementById('deadScreen').classList.remove('hidden'), 600);
+}
+
+function win() {
+  G.state = 'win';
+  running = false;
+  G.items = G.items.filter(x => x.kind !== 'amulet');
+  log('You seize the Amulet of Yendor! The dungeon trembles.', 'c-gold');
+  document.getElementById('winMsg').innerHTML =
+    'You claimed the <span style="color:var(--gold)">Amulet of Yendor</span>!<br/>' +
+    'Character level <b>' + G.player.level + '</b> · <span style="color:var(--gold)">' + G.player.gold + ' gold</span> · ' + G.turn + ' turns.<br/>' +
+    'The catacombs will remember your name.';
+  setTimeout(() => document.getElementById('winScreen').classList.remove('hidden'), 600);
+}
+
+//------------------------------------------------------------------
+//  HUD + LOG
+//------------------------------------------------------------------
+const logEl = document.getElementById('log');
+let logLines = [];
+function log(html, cls) {
+  logLines.push({ html, cls });
+  if (logLines.length > 80) logLines.shift();
+  // mark previous "new" as old
+  const ps = logEl.querySelectorAll('p.new');
+  ps.forEach(p => p.classList.remove('new'));
+  const p = document.createElement('p');
+  p.className = 'new' + (cls ? ' ' + cls : '');
+  p.innerHTML = html;
+  logEl.appendChild(p);
+  while (logEl.children.length > 80) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function updateHUD() {
+  const p = G.player;
+  document.getElementById('hpText').textContent = p.hp + ' / ' + p.maxhp;
+  document.getElementById('hpFill').style.width = (100 * p.hp / p.maxhp) + '%';
+  document.getElementById('xpText').textContent = p.xp + ' / ' + p.xpNext;
+  document.getElementById('xpFill').style.width = (100 * p.xp / p.xpNext) + '%';
+  document.getElementById('sLevel').textContent = p.level;
+  document.getElementById('sDepth').textContent = G.depth + ' / ' + DEPTH_GOAL;
+  document.getElementById('sAtk').textContent = pAtk();
+  document.getElementById('sDef').textContent = pDef();
+  document.getElementById('sWeap').textContent = p.weapon.name;
+  document.getElementById('sArmor').textContent = p.armor.name;
+  document.getElementById('sGold').textContent = p.gold;
+  document.getElementById('sPot').textContent = p.potions;
+}
+
+//------------------------------------------------------------------
+//  EFFECTS
+//------------------------------------------------------------------
+function floater(tx, ty, text, col) { floaters.push({ tx, ty, text, col, t: 0, life: 55 }); }
+function hitParticles(tx, ty, col) {
+  for (let i = 0; i < 8; i++) {
+    const a = Math.random() * Math.PI * 2, s = 0.5 + Math.random() * 2;
+    particles.push({ tx, ty, vx: Math.cos(a)*s, vy: Math.sin(a)*s, col, t: 0, life: 22 });
+  }
+}
+function deathParticles(tx, ty, col) {
+  for (let i = 0; i < 18; i++) {
+    const a = Math.random() * Math.PI * 2, s = 0.5 + Math.random() * 3;
+    particles.push({ tx, ty, vx: Math.cos(a)*s, vy: Math.sin(a)*s, col, t: 0, life: 34 });
+  }
+}
+
+//------------------------------------------------------------------
+//  RENDER
+//------------------------------------------------------------------
+function resize() {
+  const r = canvas.parentElement.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(r.width * dpr);
+  canvas.height = Math.floor(r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  view.w = r.width; view.h = r.height;
+}
+window.addEventListener('resize', resize);
+
+function render() {
+  requestAnimationFrame(render);
+  const w = view.w, h = view.h;
+  ctx.fillStyle = '#06060c';
+  ctx.fillRect(0, 0, w, h);
+  if (!G) return;
+
+  const L = G.level, p = G.player;
+  const tile = view.tile = TILE;
+
+  // camera centered on player, clamped
+  let camX = p.x * tile - w / 2 + tile / 2;
+  let camY = p.y * tile - h / 2 + tile / 2;
+  camX = Math.max(0, Math.min(MAP_W * tile - w, camX));
+  camY = Math.max(0, Math.min(MAP_H * tile - h, camY));
+  if (MAP_W * tile < w) camX = (MAP_W * tile - w) / 2;
+  if (MAP_H * tile < h) camY = (MAP_H * tile - h) / 2;
+
+  let sx = 0, sy = 0;
+  if (shake > 0.2) { sx = (Math.random()-0.5)*shake; sy = (Math.random()-0.5)*shake; shake *= 0.85; }
+  else shake = 0;
+
+  ctx.save();
+  ctx.translate(-camX + sx, -camY + sy);
+
+  const x0 = Math.max(0, Math.floor(camX / tile));
+  const y0 = Math.max(0, Math.floor(camY / tile));
+  const x1 = Math.min(MAP_W, Math.ceil((camX + w) / tile));
+  const y1 = Math.min(MAP_H, Math.ceil((camY + h) / tile));
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const font = (tile - 4) + 'px ui-monospace, Menlo, Consolas, monospace';
+
+  // tiles
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const k = L.idx(x, y);
+      const vis = G.visible.has(k);
+      const seen = L.seen[k];
+      if (!seen) continue;
+      const px = x * tile, py = y * tile;
+      const t = L.map[k];
+      if (t === T.WALL) {
+        ctx.fillStyle = vis ? '#262a3d' : '#14161f';
+        ctx.fillRect(px, py, tile, tile);
+        ctx.fillStyle = vis ? '#2f3450' : '#191c28';
+        ctx.fillRect(px, py, tile, 3);
+      } else {
+        ctx.fillStyle = vis ? '#121726' : '#0a0c14';
+        ctx.fillRect(px, py, tile, tile);
+        // floor dot
+        ctx.fillStyle = vis ? '#1c2336' : '#10131d';
+        ctx.fillRect(px + tile/2 - 1, py + tile/2 - 1, 2, 2);
+        if (t === T.STAIRS) {
+          ctx.fillStyle = vis ? '#f4c542' : '#5a4f23';
+          ctx.font = font;
+          ctx.fillText('>', px + tile/2, py + tile/2 + 1);
+        }
+      }
+    }
+  }
+
+  // items (only if seen)
+  ctx.font = font;
+  for (const it of G.items) {
+    const k = L.idx(it.x, it.y);
+    if (!L.seen[k]) continue;
+    const vis = G.visible.has(k);
+    const px = it.x * tile + tile/2, py = it.y * tile + tile/2 + 1;
+    if (it.kind === 'amulet') {
+      const pulse = 0.5 + 0.5*Math.sin(performance.now()/250);
+      ctx.shadowColor = '#ffe169'; ctx.shadowBlur = 12 + pulse*14;
+    }
+    ctx.fillStyle = vis ? it.col : dim(it.col);
+    ctx.fillText(it.g, px, py);
+    ctx.shadowBlur = 0;
+  }
+
+  // monsters (only if visible)
+  for (const m of G.monsters) {
+    if (!G.visible.has(L.idx(m.x, m.y))) continue;
+    const px = m.x * tile + tile/2, py = m.y * tile + tile/2 + 1;
+    ctx.fillStyle = m.col;
+    ctx.fillText(m.g, px, py);
+    // hp pip if hurt
+    if (m.hp < m.maxhp) {
+      const wpx = tile - 6, frac = m.hp / m.maxhp;
+      ctx.fillStyle = '#3a1018'; ctx.fillRect(m.x*tile+3, m.y*tile+tile-4, wpx, 2);
+      ctx.fillStyle = '#ff5a6e'; ctx.fillRect(m.x*tile+3, m.y*tile+tile-4, wpx*frac, 2);
+    }
+  }
+
+  // player with glow
+  const ppx = p.x * tile + tile/2, ppy = p.y * tile + tile/2 + 1;
+  const glow = 0.5 + 0.5*Math.sin(performance.now()/400);
+  ctx.shadowColor = '#b48cff'; ctx.shadowBlur = 10 + glow*8;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('@', ppx, ppy);
+  ctx.shadowBlur = 0;
+
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pa = particles[i];
+    pa.t++; pa.tx += pa.vx*0.08; pa.ty += pa.vy*0.08;
+    const a = 1 - pa.t / pa.life;
+    if (a <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = a;
+    ctx.fillStyle = pa.col;
+    const px = pa.tx * tile + tile/2, py = pa.ty * tile + tile/2;
+    ctx.fillRect(px - 2, py - 2, 4, 4);
+    ctx.globalAlpha = 1;
+  }
+
+  // floating combat text
+  ctx.font = '700 14px ui-monospace, Menlo, monospace';
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.t++;
+    const a = 1 - f.t / f.life;
+    if (a <= 0) { floaters.splice(i, 1); continue; }
+    ctx.globalAlpha = a;
+    ctx.fillStyle = f.col;
+    ctx.fillText(f.text, f.tx * tile + tile/2, f.ty * tile + tile/2 - f.t * 0.5);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+
+  // vignette
+  const vg = ctx.createRadialGradient(w/2, h/2, Math.min(w,h)*0.35, w/2, h/2, Math.max(w,h)*0.7);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function dim(hex) {
+  // dim a hex color for "seen but not visible"
+  const c = hex.replace('#','');
+  const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+  return 'rgb(' + (r*0.35|0) + ',' + (g*0.35|0) + ',' + (b*0.35|0) + ')';
+}
+
+//------------------------------------------------------------------
+//  INPUT
+//------------------------------------------------------------------
+const KEYMAP = {
+  ArrowUp: [0,-1], ArrowDown: [0,1], ArrowLeft: [-1,0], ArrowRight: [1,0],
+  w: [0,-1], s: [0,1], a: [-1,0], d: [1,0],
+  W: [0,-1], S: [0,1], A: [-1,0], D: [1,0],
+};
+window.addEventListener('keydown', (e) => {
+  if (!running) return;
+  if (KEYMAP[e.key]) { e.preventDefault(); playerMove(KEYMAP[e.key][0], KEYMAP[e.key][1]); return; }
+  if (e.key === ' ') { e.preventDefault(); playerWait(); }
+  else if (e.key === '>' || e.key === '.') { tryDescend(); }
+  else if (e.key === '1') { quaff(); }
+});
+
+// click-to-move (one step toward click) for mouse/touch players
+canvas.addEventListener('click', (e) => {
+  if (!running || !G) return;
+  const r = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  let camX = G.player.x*TILE - view.w/2 + TILE/2;
+  let camY = G.player.y*TILE - view.h/2 + TILE/2;
+  camX = Math.max(0, Math.min(MAP_W*TILE - view.w, camX));
+  camY = Math.max(0, Math.min(MAP_H*TILE - view.h, camY));
+  const gx = Math.floor((mx + camX) / TILE), gy = Math.floor((my + camY) / TILE);
+  const dx = Math.sign(gx - G.player.x), dy = Math.sign(gy - G.player.y);
+  if (Math.abs(gx-G.player.x) >= Math.abs(gy-G.player.y)) { if (dx) playerMove(dx,0); else if (dy) playerMove(0,dy); }
+  else { if (dy) playerMove(0,dy); else if (dx) playerMove(dx,0); }
+});
+
+//------------------------------------------------------------------
+//  BOOT
+//------------------------------------------------------------------
+function start() {
+  document.getElementById('titleScreen').classList.add('hidden');
+  document.getElementById('deadScreen').classList.add('hidden');
+  document.getElementById('winScreen').classList.add('hidden');
+  logLines = []; logEl.innerHTML = '';
+  floaters = []; particles = []; shake = 0;
+  newGame();
+  running = true;
+}
+document.getElementById('startBtn').addEventListener('click', start);
+document.getElementById('retryBtn').addEventListener('click', start);
+document.getElementById('winBtn').addEventListener('click', start);
+
+resize();
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Midnight Garden</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; cursor: crosshair; }
+  canvas { display: block; }
+  #hint {
+    position: fixed; top: 18px; left: 0; right: 0; text-align: center;
+    font-family: Georgia, 'Times New Roman', serif; font-size: 15px; letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.75); pointer-events: none; transition: opacity 2.5s ease;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  }
+  #hint.fade { opacity: 0; }
+</style>
+</head>
+<body>
+<div id="hint">click the ground to plant something &middot; let it grow &middot; watch the sky turn</div>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, GROUND_Y;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  GROUND_Y = H * 0.82;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const startTime = performance.now();
+const DAY_LENGTH = 70000; // ms for a full day/night cycle
+
+function timeOfDay() {
+  const t = ((performance.now() - startTime) % DAY_LENGTH) / DAY_LENGTH;
+  return t; // 0 = dawn, 0.25 = noon, 0.5 = dusk, 0.75 = midnight
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function lerpColor(c1, c2, t) {
+  return [
+    Math.round(lerp(c1[0], c2[0], t)),
+    Math.round(lerp(c1[1], c2[1], t)),
+    Math.round(lerp(c1[2], c2[2], t)),
+  ];
+}
+function rgb(c) { return `rgb(${c[0]},${c[1]},${c[2]})`; }
+function rgba(c, a) { return `rgba(${c[0]},${c[1]},${c[2]},${a})`; }
+
+// sky palette keyframes across a full day
+const SKY_KEYS = [
+  { t: 0.00, top: [20, 24, 60],  bot: [255, 170, 110] }, // dawn
+  { t: 0.22, top: [60, 140, 220], bot: [200, 230, 250] }, // morning
+  { t: 0.40, top: [40, 120, 210], bot: [180, 220, 245] }, // day
+  { t: 0.50, top: [60, 50, 90],  bot: [255, 130, 90]  }, // dusk
+  { t: 0.58, top: [20, 18, 45],  bot: [90, 50, 70]    }, // twilight
+  { t: 0.75, top: [4, 6, 22],    bot: [18, 14, 40]    }, // midnight
+  { t: 1.00, top: [20, 24, 60],  bot: [255, 170, 110] }, // back to dawn
+];
+
+function skyColors(t) {
+  for (let i = 0; i < SKY_KEYS.length - 1; i++) {
+    const a = SKY_KEYS[i], b = SKY_KEYS[i + 1];
+    if (t >= a.t && t <= b.t) {
+      const local = (t - a.t) / (b.t - a.t);
+      return { top: lerpColor(a.top, b.top, local), bot: lerpColor(a.bot, b.bot, local) };
+    }
+  }
+  return { top: SKY_KEYS[0].top, bot: SKY_KEYS[0].bot };
+}
+
+function nightFactor(t) {
+  // 0 fully day, 1 fully night
+  const d = Math.sin((t - 0.25) * Math.PI * 2) * -1;
+  return Math.max(0, Math.min(1, (d + 0.4) / 1.0));
+}
+
+// stars
+const stars = [];
+for (let i = 0; i < 160; i++) {
+  stars.push({
+    x: Math.random(),
+    y: Math.random() * 0.6,
+    r: Math.random() * 1.4 + 0.3,
+    phase: Math.random() * Math.PI * 2,
+    speed: Math.random() * 2 + 0.5,
+  });
+}
+
+// plants
+const plants = [];
+const MAX_PLANTS = 90;
+const HUES = [330, 350, 10, 30, 45, 200, 260, 280, 0];
+
+function plantAt(x) {
+  if (plants.length >= MAX_PLANTS) plants.shift();
+  const isGrass = Math.random() < 0.28;
+  const big = !isGrass && Math.random() < 0.12;
+  plants.push({
+    x,
+    y: GROUND_Y + (Math.random() * 6 - 3),
+    born: performance.now(),
+    growMs: 1800 + Math.random() * 2200,
+    height: isGrass ? 18 + Math.random() * 22 : (big ? 130 + Math.random() * 70 : 50 + Math.random() * 70),
+    curve: (Math.random() - 0.5) * 0.9,
+    swayPhase: Math.random() * Math.PI * 2,
+    swaySpeed: 0.5 + Math.random() * 0.6,
+    hue: HUES[Math.floor(Math.random() * HUES.length)] + (Math.random() * 14 - 7),
+    petals: 5 + Math.floor(Math.random() * 4),
+    isGrass,
+    big,
+    leafCount: 1 + Math.floor(Math.random() * 2),
+  });
+}
+
+canvas.addEventListener('click', (e) => {
+  if (e.clientY < GROUND_Y - 10) return; // only plant near/below the ground line
+  plantAt(e.clientX);
+});
+
+const hintEl = document.getElementById('hint');
+setTimeout(() => hintEl.classList.add('fade'), 6000);
+
+// fireflies
+const fireflies = [];
+function maybeSpawnFirefly(night) {
+  if (night > 0.4 && fireflies.length < 28 && Math.random() < 0.04 && plants.length > 0) {
+    const p = plants[Math.floor(Math.random() * plants.length)];
+    fireflies.push({
+      x: p.x + (Math.random() - 0.5) * 60,
+      y: GROUND_Y - Math.random() * 80 - 10,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.3 + Math.random() * 0.5,
+      drift: (Math.random() - 0.5) * 0.4,
+      life: 0,
+      maxLife: 8000 + Math.random() * 9000,
+    });
+  }
+}
+
+function drawSky(t, night) {
+  const { top, bot } = skyColors(t);
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  g.addColorStop(0, rgb(top));
+  g.addColorStop(1, rgb(bot));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, GROUND_Y + 40);
+
+  // stars
+  ctx.save();
+  for (const s of stars) {
+    const tw = 0.5 + 0.5 * Math.sin(performance.now() * 0.001 * s.speed + s.phase);
+    ctx.globalAlpha = night * tw * 0.9;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * GROUND_Y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // sun / moon following an arc
+  const angle = t * Math.PI * 2 - Math.PI / 2;
+  const cx = W / 2 + Math.cos(angle) * W * 0.55;
+  const cy = GROUND_Y * 0.55 + Math.sin(angle) * GROUND_Y * 0.65;
+  if (cy < GROUND_Y * 0.95) {
+    const isSun = night < 0.5;
+    const glowColor = isSun ? [255, 230, 150] : [220, 225, 245];
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, isSun ? 70 : 50);
+    grad.addColorStop(0, rgba(glowColor, 0.9));
+    grad.addColorStop(1, rgba(glowColor, 0));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, isSun ? 70 : 50, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = isSun ? 'rgb(255,245,210)' : 'rgb(235,238,250)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, isSun ? 24 : 18, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawGround(night) {
+  const groundTop = lerpColor([90, 150, 70], [20, 35, 30], night);
+  const groundBot = lerpColor([55, 95, 45], [8, 16, 14], night);
+  const g = ctx.createLinearGradient(0, GROUND_Y - 10, 0, H);
+  g.addColorStop(0, rgb(groundTop));
+  g.addColorStop(1, rgb(groundBot));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(W, GROUND_Y);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawPlant(p, now, night) {
+  const age = now - p.born;
+  const grow = Math.min(1, age / p.growMs);
+  const eased = 1 - Math.pow(1 - grow, 3);
+  const h = p.height * eased;
+  if (h < 1) return;
+
+  const sway = Math.sin(now * 0.0012 * p.swaySpeed + p.swayPhase) * (6 + p.height * 0.06) * (0.4 + 0.6 * eased);
+  const tipX = p.x + p.curve * h * 0.5 + sway;
+  const tipY = p.y - h;
+  const ctrlX = p.x + p.curve * h * 0.25 + sway * 0.5;
+  const ctrlY = p.y - h * 0.55;
+
+  const stemColor = night > 0.5 ? `rgba(40,70,45,${0.85})` : `rgba(60,110,55,0.95)`;
+  ctx.strokeStyle = stemColor;
+  ctx.lineWidth = p.isGrass ? 2 : Math.max(2, 4 - h * 0.01);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY);
+  ctx.stroke();
+
+  if (!p.isGrass) {
+    for (let i = 1; i <= p.leafCount; i++) {
+      const lt = i / (p.leafCount + 1);
+      const lx = lerp(p.x, ctrlX, lt) + (i % 2 === 0 ? 1 : -1) * (6 + h * 0.08);
+      const ly = lerp(p.y, ctrlY, lt) - 4;
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate((i % 2 === 0 ? 1 : -1) * 0.6 + sway * 0.02);
+      ctx.fillStyle = night > 0.5 ? 'rgba(45,80,50,0.85)' : 'rgba(70,130,60,0.9)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 9 + h * 0.04, 4 + h * 0.015, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  if (!p.isGrass && grow > 0.7) {
+    const bloom = Math.min(1, (grow - 0.7) / 0.3);
+    const sat = night > 0.5 ? 35 : 70;
+    const light = night > 0.5 ? 35 : 60;
+    const petalR = (p.big ? 16 : 9) * bloom;
+    for (let i = 0; i < p.petals; i++) {
+      const ang = (i / p.petals) * Math.PI * 2;
+      const px = tipX + Math.cos(ang) * petalR * 0.9;
+      const py = tipY + Math.sin(ang) * petalR * 0.9;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(ang);
+      ctx.fillStyle = `hsla(${p.hue}, ${sat}%, ${light}%, 0.92)`;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, petalR, petalR * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = night > 0.5 ? 'hsla(50,60%,40%,0.9)' : 'hsla(50,90%,60%,0.95)';
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, petalR * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (p.big && bloom > 0.95) {
+      ctx.save();
+      ctx.globalAlpha = 0.5 + 0.5 * Math.sin(now * 0.005 + p.swayPhase);
+      ctx.fillStyle = `hsla(${p.hue}, 90%, 80%, 0.7)`;
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, petalR * 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+function drawFireflies(now, night) {
+  for (let i = fireflies.length - 1; i >= 0; i--) {
+    const f = fireflies[i];
+    f.life += 16.7;
+    if (f.life > f.maxLife || night < 0.15) { fireflies.splice(i, 1); continue; }
+    const lifeT = f.life / f.maxLife;
+    const fade = Math.min(1, lifeT * 6) * Math.min(1, (1 - lifeT) * 6);
+    const bob = Math.sin(now * 0.002 * f.speed + f.phase) * 18;
+    const drift = Math.sin(now * 0.0006 + f.phase) * 30;
+    const fx = f.x + drift;
+    const fy = f.y + bob;
+    const glow = 0.4 + 0.6 * Math.sin(now * 0.006 + f.phase * 3);
+    const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, 10);
+    grad.addColorStop(0, `rgba(220,255,150,${0.8 * fade * glow * night})`);
+    grad.addColorStop(1, 'rgba(220,255,150,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(fx, fy, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,255,220,${0.9 * fade * night})`;
+    ctx.beginPath();
+    ctx.arc(fx, fy, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function frame() {
+  const now = performance.now();
+  const t = timeOfDay();
+  const night = nightFactor(t);
+
+  drawSky(t, night);
+  drawGround(night);
+
+  for (const p of plants) drawPlant(p, now, night);
+
+  maybeSpawnFirefly(night);
+  drawFireflies(now, night);
+
+  requestAnimationFrame(frame);
+}
+
+// seed a few plants so it's not empty on load
+for (let i = 0; i < 5; i++) {
+  const x = W * (0.15 + Math.random() * 0.7);
+  plantAt(x);
+  plants[plants.length - 1].born -= 5000; // already grown
+}
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

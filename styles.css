@@ -1,285 +1,657 @@
 :root {
-  --void: #05060d;
-  --deep: #0b1120;
-  --star: #eef1fb;
-  --dust: #8a93b2;
-  --glow: #9db4ff;
-  --signal: #ffb454;
-  --line: #1a2138;
-  --maxw: 780px;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  /* — Ink & ground (deep space is never pure black) — */
+  --void:        #080B18;   /* page ground / plate */
+  --panel:       #0E1329;   /* raised card / inset plate */
+  --panel-2:     #0B1022;   /* deeper inset */
+
+  /* — Engraving inks — */
+  --star-ink:    #F3ECD9;   /* PRIMARY text — warm parchment white */
+  --faded-ink:   #A29C86;   /* muted / caption / secondary text */
+  --gilt:        #C9A24E;   /* engraving lines, links, ornament */
+  --gilt-bright: #E6C878;   /* link/ornament hover, focus ring */
+  --verdigris:   #6EA79D;   /* coordinate grid, secondary rules, hover */
+  --rubric:      #C1543B;   /* rare accent: active nav, a star of note (lifted from #B0472F for AA on void) */
+
+  /* — Rules & grid tuning (kept faint on purpose) — */
+  --rule:        rgba(201,162,78,0.38);   /* gilt hairline frame */
+  --rule-soft:   rgba(201,162,78,0.16);   /* inner double-rule */
+  --grid-ra:     rgba(110,167,157,0.10);  /* verdigris meridians (vertical) */
+  --grid-dec:    rgba(110,167,157,0.07);  /* verdigris parallels (horizontal) */
+  --ecliptic:    rgba(201,162,78,0.10);   /* single curved ecliptic line */
+
+  /* — Type — */
+  --font-display: "Marcellus", "Trajan Pro", Georgia, "Times New Roman", serif;
+  --font-caps:    "Marcellus SC", "Marcellus", Georgia, "Times New Roman", serif;
+  --font-body:    "EB Garamond", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-mono:    ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+
+  /* — Metrics — */
+  --maxw:        820px;
+  --frame-inset: clamp(0.75rem, 2.4vw, 2rem);  /* plate distance from viewport edge */
+  --pad-x:       clamp(1.1rem, 4vw, 2.6rem);   /* content inner padding */
+  --focus:       var(--gilt-bright);
 }
 
-* { box-sizing: border-box; }
+/* ======================================================================
+   RESET / BASE
+   ====================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
 
-html, body { margin: 0; }
+html { -webkit-text-size-adjust: 100%; }
+
+html, body { margin: 0; padding: 0; }
 
 body {
   min-height: 100vh;
-  color: var(--star);
+  color: var(--star-ink);
   font-family: var(--font-body);
-  line-height: 1.65;
+  line-height: 1.6;
   background-color: var(--void);
+  /* Chart paper: faint RA meridians + DEC parallels + a single curved ecliptic */
   background-image:
-    radial-gradient(1200px 620px at 50% 118%, rgba(157, 180, 255, 0.16), transparent 62%),
-    radial-gradient(760px 520px at 84% 6%, rgba(150, 118, 255, 0.11), transparent 60%),
-    radial-gradient(620px 520px at 8% 26%, rgba(86, 138, 255, 0.08), transparent 60%);
-  background-attachment: fixed;
-  background-repeat: no-repeat;
+    repeating-linear-gradient(90deg, transparent 0, transparent 79px, var(--grid-ra) 79px, var(--grid-ra) 80px),
+    repeating-linear-gradient(0deg, transparent 0, transparent 79px, var(--grid-dec) 79px, var(--grid-dec) 80px),
+    linear-gradient(-12deg, transparent calc(50% - 0.5px), var(--ecliptic) 50%, transparent calc(50% + 0.5px));
+  background-attachment: fixed, fixed, fixed;
+  background-repeat: repeat, repeat, no-repeat;
+  background-size: 80px 80px, 80px 80px, 100% 100%;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* --- Starfield: two drifting, tiling layers behind everything --- */
-body::before,
-body::after {
+img { max-width: 100%; height: auto; }
+
+a {
+  color: var(--gilt);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+a:hover { color: var(--gilt-bright); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Global visible focus — never removed */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ======================================================================
+   PLATE FRAME (.plate) — the constant "atlas plate" identity
+   ====================================================================== */
+.plate {
+  position: relative;
+  min-height: 100vh;
+  margin: var(--frame-inset);
+  border: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+}
+
+/* inner double rule */
+.plate::before {
   content: "";
-  position: fixed;
-  inset: -20% 0 0 0;
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--rule-soft);
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
 }
 
-body::before {
+/* degree ticks along top & bottom inner margins */
+.plate::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 12px;
+  bottom: 12px;
+  pointer-events: none;
+  z-index: 0;
   background-image:
-    radial-gradient(1.6px 1.6px at 40px 60px, #ffffff, transparent),
-    radial-gradient(1.7px 1.7px at 220px 42px, #ffffff, transparent),
-    radial-gradient(1.4px 1.4px at 130px 182px, rgba(255,255,255,.92), transparent),
-    radial-gradient(1.5px 1.5px at 300px 250px, rgba(206,222,255,.95), transparent),
-    radial-gradient(1.3px 1.3px at 90px 288px, rgba(255,246,222,.92), transparent),
-    radial-gradient(1.6px 1.6px at 258px 148px, #ffffff, transparent),
-    radial-gradient(1.2px 1.2px at 180px 120px, rgba(255,255,255,.8), transparent);
-  background-size: 340px 340px;
-  opacity: 0.9;
-  animation: drift 240s linear infinite, twinkle 7s ease-in-out infinite alternate;
+    repeating-linear-gradient(90deg, var(--rule) 0, var(--rule) 1px, transparent 1px, transparent 28px),
+    repeating-linear-gradient(90deg, var(--rule) 0, var(--rule) 1px, transparent 1px, transparent 28px);
+  background-repeat: no-repeat, no-repeat;
+  background-position: top left, bottom left;
+  background-size: 100% 6px, 100% 6px;
 }
 
-body::after {
-  background-image:
-    radial-gradient(1px 1px at 30px 40px, rgba(255,255,255,.7), transparent),
-    radial-gradient(1px 1px at 110px 90px, rgba(255,255,255,.6), transparent),
-    radial-gradient(1px 1px at 70px 160px, rgba(200,214,255,.65), transparent),
-    radial-gradient(1px 1px at 160px 30px, rgba(255,255,255,.55), transparent),
-    radial-gradient(1px 1px at 190px 170px, rgba(255,255,255,.6), transparent),
-    radial-gradient(1px 1px at 20px 120px, rgba(255,240,214,.6), transparent);
-  background-size: 210px 210px;
-  opacity: 0.6;
-  animation: drift 380s linear infinite reverse, twinkle 9s ease-in-out infinite alternate;
-}
+/* keep real content above the frame pseudo-layers */
+.masthead, main, .colophon { position: relative; z-index: 2; }
 
-@keyframes drift {
-  from { background-position: 0 0; }
-  to   { background-position: 0 -1020px; }
-}
-@keyframes twinkle {
-  from { opacity: 0.55; }
-  to   { opacity: 0.95; }
-}
-
-a { color: var(--glow); text-decoration: none; }
-a:hover { color: var(--star); text-decoration: underline; text-underline-offset: 3px; }
-
-/* --- Header / nav --- */
-header.site-header {
-  border-bottom: 1px solid var(--line);
+/* ======================================================================
+   NAV (.masthead / .chart-nav / .seal / .seal-mark / .nav-links / .active)
+   ====================================================================== */
+.masthead {
   position: sticky;
   top: 0;
-  background: rgba(5, 6, 13, 0.72);
+  background: rgba(8, 11, 24, 0.78);
   backdrop-filter: blur(8px);
-  z-index: 10;
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule-soft);
 }
 
-.nav {
+.chart-nav {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 1rem 1.5rem;
+  padding: 0.9rem var(--pad-x);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.nav .brand {
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--star);
+.seal {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
+  font-family: var(--font-caps);
+  letter-spacing: 0.14em;
+  font-size: 1.05rem;
+  color: var(--star-ink);
 }
-.nav .brand:hover { text-decoration: none; opacity: 0.85; }
-.brand-logo {
-  border-radius: 8px;
+.seal:hover { color: var(--star-ink); text-decoration: none; opacity: 0.9; }
+
+.seal-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--rule-soft);
   display: block;
-  box-shadow: 0 0 18px rgba(157, 180, 255, 0.35);
 }
 
-.nav ul {
+.nav-links {
   display: flex;
-  gap: 1.5rem;
+  gap: clamp(0.9rem, 3vw, 1.6rem);
   list-style: none;
   margin: 0;
   padding: 0;
+  flex-wrap: wrap;
 }
-.nav a {
-  color: var(--dust);
+.nav-links a {
   font-family: var(--font-mono);
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
   text-transform: lowercase;
+  color: var(--faded-ink);
+  padding-block: 0.3rem;
 }
-.nav a.active, .nav a:hover { color: var(--star); text-decoration: none; }
-.nav a.active { color: var(--signal); }
+.nav-links a:hover { color: var(--star-ink); text-decoration: none; }
 
-/* --- Layout --- */
+.nav-links a.active {
+  color: var(--rubric);
+  position: relative;
+}
+.nav-links a.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--gilt);
+}
+
+/* ======================================================================
+   LAYOUT / MAIN
+   ====================================================================== */
 main {
+  flex: 1 0 auto;
   max-width: var(--maxw);
+  width: 100%;
   margin: 0 auto;
-  padding: 4rem 1.5rem 6rem;
-}
-main.center {
-  min-height: calc(100vh - 66px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding-top: 2rem;
+  padding: clamp(2.5rem, 6vw, 4.5rem) var(--pad-x) clamp(3rem, 8vw, 5rem);
 }
 
+/* ======================================================================
+   TYPOGRAPHY
+   ====================================================================== */
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.28em;
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--signal);
+  color: var(--faded-ink);
+  margin: 0 0 1.1rem;
+}
+.eyebrow::before {
+  content: "\25CF\00A0";  /* ● + nbsp */
+  color: var(--gilt);
+}
+
+.plate-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 7vw, 4.4rem);
+  line-height: 1.02;
+  letter-spacing: 0.005em;
+  color: var(--star-ink);
+  margin: 0 0 1.1rem;
+  font-weight: 400;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--star-ink);
+  margin: 2.75rem 0 0.6rem;
+}
+
+p {
+  font-family: var(--font-body);
+  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  line-height: 1.6;
+  color: var(--star-ink);
+  max-width: 62ch;
+  margin: 0 0 1rem;
+}
+
+.lede {
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--star-ink);
+  opacity: 0.92;
+  max-width: 60ch;
   margin: 0 0 1.25rem;
 }
 
-h1 {
-  font-size: clamp(2.4rem, 6vw, 3.4rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+.readout {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: var(--faded-ink);
+  max-width: none;
   margin: 0 0 1rem;
-  font-weight: 700;
-}
-h2 {
-  font-size: 1.25rem;
-  letter-spacing: 0.01em;
-  margin: 2.75rem 0 0.75rem;
-}
-.lede {
-  color: var(--dust);
-  font-size: 1.12rem;
-  max-width: 56ch;
-}
-p { max-width: 60ch; }
-
-/* --- Hero (home) --- */
-.hero { animation: rise 0.7s ease both; }
-.hero .avatar {
-  border-radius: 18px;
-  border: 1px solid var(--line);
-  margin-bottom: 1.75rem;
-  filter: drop-shadow(0 8px 30px rgba(157, 180, 255, 0.28));
-}
-.hero .lede { margin-bottom: 1.5rem; }
-
-.coord {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--dust);
-  letter-spacing: 0.05em;
-}
-.coord .dot {
-  color: var(--signal);
-  animation: pulse 2.4s ease-in-out infinite;
 }
 
-/* --- Coming-soon panel (resume) --- */
-.panel {
-  margin-top: 2rem;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(157,180,255,0.05), rgba(11,17,32,0.35));
-  padding: 1.5rem 1.6rem;
-  max-width: 40ch;
+/* ======================================================================
+   HERO
+   ====================================================================== */
+.hero {
+  animation: rise 0.5s ease both;
 }
-.panel .readout {
-  font-family: var(--font-mono);
-  font-size: 0.86rem;
-  color: var(--star);
-  display: flex;
+
+/* Home: two-column grid (text + chart). Keyed on the presence of the
+   signature .chart so it applies wherever the constellation is embedded. */
+.hero:has(.chart),
+.hero.hero--home {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(1.5rem, 5vw, 3.5rem);
   align-items: center;
-  gap: 0.6rem;
-  margin: 0;
 }
-.panel .readout .light {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--signal);
-  box-shadow: 0 0 10px var(--signal);
-  animation: pulse 2s ease-in-out infinite;
-  flex-shrink: 0;
-}
-.panel .sub {
-  color: var(--dust);
-  font-size: 0.95rem;
-  margin: 0.85rem 0 0;
+
+/* staggered entry for direct children */
+.hero > * { animation: rise 0.5s ease both; }
+.hero > *:nth-child(1) { animation-delay: 0.00s; }
+.hero > *:nth-child(2) { animation-delay: 0.06s; }
+.hero > *:nth-child(3) { animation-delay: 0.12s; }
+.hero > *:nth-child(4) { animation-delay: 0.18s; }
+.hero > *:nth-child(5) { animation-delay: 0.24s; }
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 1.4rem;
 }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }
 }
+
+/* ======================================================================
+   BUTTONS (.chart-btn / .chart-btn--ghost)
+   ====================================================================== */
+.chart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.15rem;
+  border: 1px solid var(--gilt);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gilt);
+  background: transparent;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.chart-btn span { transition: transform 0.18s ease; display: inline-block; }
+.chart-btn:hover,
+.chart-btn:focus-visible {
+  background: var(--gilt-bright);
+  color: var(--void);
+  border-color: var(--gilt-bright);
+  text-decoration: none;
+}
+.chart-btn:hover span,
+.chart-btn:focus-visible span { transform: translateX(3px); }
+
+.chart-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--faded-ink);
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+.chart-btn--ghost:hover,
+.chart-btn--ghost:focus-visible {
+  background: transparent;
+  color: var(--gilt-bright);
+  border-color: transparent;
+}
+
+/* ======================================================================
+   SIGNATURE — THE CORVUS CHART (.chart / .chart-svg / .chart-line /
+   .chart-star / .chart-label)
+   ====================================================================== */
+.chart {
+  background: var(--panel);
+  border: 1px solid var(--rule-soft);
+  border-radius: 3px;
+  padding: 0.75rem;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  position: relative;
+  /* inset coordinate grid */
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 43px, var(--grid-ra) 43px, var(--grid-ra) 44px),
+    repeating-linear-gradient(0deg, transparent 0, transparent 43px, var(--grid-dec) 43px, var(--grid-dec) 44px);
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 440 / 320;
+  overflow: visible;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--gilt);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: draw-in 0.9s ease forwards;
+}
+
+.chart-star {
+  fill: var(--star-ink);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: twinkle 4s ease-in-out infinite;
+}
+.chart-star.chart-star--note { fill: var(--rubric); }
+.chart-star:nth-of-type(2) { animation-delay: 0.6s; }
+.chart-star:nth-of-type(3) { animation-delay: 1.2s; }
+.chart-star:nth-of-type(4) { animation-delay: 1.8s; }
+.chart-star:nth-of-type(5) { animation-delay: 2.4s; }
+
+.chart-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  fill: var(--faded-ink);
+}
+
+@keyframes draw-in {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ======================================================================
+   CATALOGUE (games) — .catalogue / .catalogue-grid / .object-card /
+   .object-glyph / .object-desig / .object-mag / .enter
+   ====================================================================== */
+.catalogue {
+  margin-top: clamp(2rem, 5vw, 3rem);
+}
+
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.object-card {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--rule-soft);
+  border-radius: 3px;
+  padding: 1.25rem 1.3rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+/* corner tick marks echoing the plate frame */
+.object-card::before,
+.object-card::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--gilt);
+  pointer-events: none;
+}
+.object-card::before {
+  top: 7px; left: 7px;
+  border-top: 1px solid var(--gilt);
+  border-left: 1px solid var(--gilt);
+}
+.object-card::after {
+  bottom: 7px; right: 7px;
+  border-bottom: 1px solid var(--gilt);
+  border-right: 1px solid var(--gilt);
+}
+.object-card:hover {
+  border-color: var(--gilt);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.object-card header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.object-glyph {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.object-glyph line,
+.object-glyph polyline,
+.object-glyph path {
+  fill: none;
+  stroke: var(--faded-ink);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.18s ease;
+}
+.object-glyph circle {
+  fill: var(--faded-ink);
+  transition: fill 0.18s ease;
+}
+.object-card:hover .object-glyph line,
+.object-card:hover .object-glyph polyline,
+.object-card:hover .object-glyph path { stroke: var(--gilt-bright); }
+.object-card:hover .object-glyph circle { fill: var(--gilt-bright); }
+
+/* Glyphs reuse .chart-line/.chart-star for markup convenience, but the ONE
+   moving idea is the home constellation — keep card glyphs static (ignite on
+   hover only), so we strip the inherited twinkle/draw-in here. */
+.object-glyph .chart-line {
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  animation: none;
+}
+.object-glyph .chart-star { animation: none; }
+
+.object-desig {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--gilt);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.object-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--star-ink);
+  margin: 0;
+}
+
+.object-card p {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  color: var(--faded-ink);
+  max-width: none;
+  margin: 0;
+  flex: 1;
+}
+
+.object-mag {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: var(--faded-ink);
+}
+
+.enter {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--gilt);
+  margin-top: 0.15rem;
+}
+.enter:hover { color: var(--gilt-bright); text-decoration: none; }
+.enter span { display: inline-block; transition: transform 0.18s ease; }
+.enter:hover span,
+.enter:focus-visible span { transform: translateX(3px); }
+
+/* ======================================================================
+   RESUME — .status-plate / .armillary / .status-light
+   ====================================================================== */
+.status-plate {
+  margin-top: 2.25rem;
+  background: var(--panel);
+  border: 1px solid var(--rule-soft);
+  border-radius: 3px;
+  padding: 2rem 1.8rem;
+  max-width: 42ch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+/* Rings/strokes take their color from currentColor via the SVG's own
+   inline fill/stroke attributes; we only set color, size and rotation so
+   we never clobber the filled center star. */
+.armillary {
+  width: 120px;
+  height: 120px;
+  color: var(--gilt);
+  transform-origin: center;
+  animation: spin 40s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.status-plate .readout { margin: 0; }
+.status-plate .readout.sub { color: var(--faded-ink); }
+
+.status-light {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gilt);
+  box-shadow: 0 0 8px var(--gilt);
+  margin-right: 0.4rem;
+  vertical-align: baseline;
+  animation: pulse 2s ease-in-out infinite;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
 
-/* --- Games grid --- */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 1rem;
-  margin-top: 2rem;
-}
-.card {
-  position: relative;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(157,180,255,0.045), rgba(11,17,32,0.4));
-  padding: 1.2rem 1.25rem 1.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-}
-.card:hover {
-  border-color: rgba(157, 180, 255, 0.55);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(5, 6, 13, 0.6), 0 0 22px rgba(157, 180, 255, 0.12);
-}
-.card .tag {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--signal);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-}
-.card h3 { margin: 0; font-size: 1.12rem; color: var(--star); letter-spacing: -0.01em; }
-.card p { margin: 0; color: var(--dust); font-size: 0.9rem; flex: 1; max-width: none; }
-.card .play { font-weight: 600; margin-top: 0.35rem; align-self: flex-start; }
-.card .play.ext { color: var(--dust); }
-
-footer {
+/* ======================================================================
+   FOOTER (.colophon)
+   ====================================================================== */
+.colophon {
+  flex-shrink: 0;
   max-width: var(--maxw);
+  width: 100%;
   margin: 0 auto;
-  padding: 2rem 1.5rem 3rem;
-  color: var(--dust);
+  padding: 2rem var(--pad-x) 3rem;
+  border-top: 1px solid var(--rule-soft);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: var(--faded-ink);
 }
 
+/* ======================================================================
+   RESPONSIVE
+   ====================================================================== */
+@media (max-width: 760px) {
+  .hero:has(.chart),
+  .hero.hero--home {
+    grid-template-columns: 1fr;
+  }
+  .hero:has(.chart) .chart,
+  .hero.hero--home .chart {
+    max-width: 380px;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .chart-nav {
+    justify-content: center;
+    text-align: center;
+  }
+  .nav-links { justify-content: center; }
+  .catalogue-grid { grid-template-columns: 1fr; }
+}
+
+/* ======================================================================
+   REDUCED MOTION
+   ====================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  body::before, body::after,
-  .hero, .coord .dot, .panel .readout .light {
+  .hero,
+  .hero > *,
+  .chart-star,
+  .status-light {
+    animation: none;
+  }
+  .chart-line {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .armillary {
     animation: none;
   }
 }

@@ -1,0 +1,11 @@
+.vercel
+node_modules
+.DS_Store
+.claude
+
+# Keep most games out of deploy; ship only these three + the listing page
+games/*
+!games/index.html
+!games/chroma-rift
+!games/gravity-wells
+!games/sunstone
