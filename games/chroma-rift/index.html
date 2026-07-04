@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CHROMA RIFT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="game">
+  <canvas id="c"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="hud-block">
+        <div class="hud-label">SCORE</div>
+        <div class="hud-value" id="score">0</div>
+      </div>
+      <div class="hud-block center">
+        <div class="hud-label">WAVE</div>
+        <div class="hud-value" id="wave">1</div>
+      </div>
+      <div class="hud-block right">
+        <div class="hud-label">COMBO</div>
+        <div class="hud-value" id="combo">x1</div>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="health-wrap">
+        <div class="health-icon">♥</div>
+        <div class="health-bar"><i id="healthFill"></i></div>
+      </div>
+      <div class="color-wrap" id="colorWrap">
+        <div class="color-dot" data-c="0"></div>
+        <div class="color-dot" data-c="1"></div>
+        <div class="color-dot" data-c="2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Versus HUD -->
+  <div id="vsHud" class="hidden">
+    <div class="vp vp1">
+      <div class="vp-head"><span class="vp-name" id="p1name">P1</span><span class="vp-frags"><b id="p1frags">0</b> KO</span></div>
+      <div class="vp-bar"><i id="p1health"></i></div>
+      <div class="vp-xp"><i id="p1xp"></i></div>
+      <div class="vp-foot">
+        <span id="p1level">Lv 1</span>
+        <span id="p1dots" class="vp-dots">
+          <span class="color-dot" data-c="0"></span><span class="color-dot" data-c="1"></span><span class="color-dot" data-c="2"></span>
+        </span>
+      </div>
+    </div>
+    <div id="fragGoal" class="frag-goal">FIRST TO 8</div>
+    <div class="vp vp2">
+      <div class="vp-head"><span class="vp-frags"><b id="p2frags">0</b> KO</span><span class="vp-name" id="p2name">P2</span></div>
+      <div class="vp-bar"><i id="p2health"></i></div>
+      <div class="vp-xp"><i id="p2xp"></i></div>
+      <div class="vp-foot">
+        <span id="p2dots" class="vp-dots">
+          <span class="color-dot" data-c="0"></span><span class="color-dot" data-c="1"></span><span class="color-dot" data-c="2"></span>
+        </span>
+        <span id="p2level">Lv 1</span>
+      </div>
+    </div>
+  </div>
+
+  <button id="menuBtn" class="corner-btn hidden" title="Menu (Esc)">☰</button>
+  <button id="muteBtn" class="corner-btn" title="Mute (M)">🔊</button>
+
+  <!-- Wave banner -->
+  <div id="banner" class="banner hidden"><span id="bannerText"></span></div>
+
+  <!-- Title -->
+  <div id="titleScreen" class="overlay">
+    <div class="card">
+      <h1 class="logo">CHROMA<span>RIFT</span></h1>
+      <p class="tag">Match the color. Break the rift.</p>
+      <div class="how">
+        <div class="how-row"><b>MOVE</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows</div>
+        <div class="how-row"><b>AIM &amp; FIRE</b> mouse · hold to shoot</div>
+        <div class="how-row"><b>SWITCH COLOR</b> <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> · <kbd>Q</kbd>/<kbd>E</kbd> · scroll · right-click</div>
+        <div class="how-row rule">
+          Your shots only damage targets of the
+          <em class="r">same</em> color.
+          Wrong color is <em class="b">blocked</em>.
+        </div>
+      </div>
+      <div class="mode-row">
+        <button class="play-btn" id="soloBtn">SOLO</button>
+        <button class="play-btn alt hidden" id="onlineBtn">ONLINE · 2P</button>
+        <button class="play-btn ghosted" id="versusBtn">LOCAL · 2P</button>
+      </div>
+      <div class="mode-row" style="margin-top:10px">
+        <button class="play-btn danger" id="impossibleBtn">☠ IMPOSSIBLE</button>
+      </div>
+      <p class="hint-small">local versus: grab XP orbs to power up · first to 8 KOs wins</p>
+      <button class="ghost-btn" id="settingsBtn">⚙ SETTINGS</button>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pauseScreen" class="overlay hidden dim">
+    <div class="card small">
+      <h2>PAUSED</h2>
+      <button class="play-btn" id="resumeBtn">RESUME</button>
+      <button class="ghost-btn" id="pauseSettingsBtn">SETTINGS</button>
+      <button class="ghost-btn" id="quitBtn">ABANDON RUN</button>
+    </div>
+  </div>
+
+  <!-- Game over -->
+  <div id="overScreen" class="overlay hidden">
+    <div class="card">
+      <h1 class="logo dead">RIFT<span>COLLAPSE</span></h1>
+      <div class="result">
+        <div class="result-row"><span>SCORE</span><b id="finalScore">0</b></div>
+        <div class="result-row"><span>WAVE REACHED</span><b id="finalWave">1</b></div>
+        <div class="result-row"><span>BEST COMBO</span><b id="finalCombo">x1</b></div>
+        <div class="result-row best"><span>BEST SCORE</span><b id="bestScore">0</b></div>
+      </div>
+      <button class="play-btn" id="againBtn">GO AGAIN</button>
+      <button class="ghost-btn" id="overMenuBtn">MAIN MENU</button>
+    </div>
+  </div>
+
+  <!-- Online lobby -->
+  <div id="lobbyScreen" class="overlay hidden">
+    <div class="card small">
+      <h1 class="logo" style="font-size:36px">PLAY ONLINE</h1>
+      <p class="tag">Both players open this page, enter the <b>same room code</b>, and press Connect. The first to connect hosts the match.</p>
+      <div class="lobby-form">
+        <div class="lf-row" id="lobbyServerRow">
+          <label>Server</label>
+          <input id="lobbyServer" type="text" spellcheck="false" placeholder="ws://192.168.1.10:3000" />
+        </div>
+        <div class="lf-row">
+          <label>Room code</label>
+          <input id="lobbyRoom" type="text" spellcheck="false" maxlength="8" placeholder="e.g. NEON" />
+        </div>
+      </div>
+      <p class="lobby-status" id="lobbyStatus">Enter a room code to begin.</p>
+      <button class="play-btn" id="lobbyConnect">CONNECT</button>
+      <button class="ghost-btn" id="lobbyBack">BACK</button>
+      <p class="hint-small">move <kbd>WASD</kbd> · aim &amp; fire with the <kbd>mouse</kbd> · color <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> / <kbd>Q</kbd><kbd>E</kbd> / scroll</p>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settingsScreen" class="overlay hidden">
+    <div class="card settings-card">
+      <h1 class="logo" style="font-size:34px">SETTINGS</h1>
+      <div class="settings-grid">
+        <section class="set-block">
+          <h3>NAMES</h3>
+          <label class="set-field">Player 1 / You<input id="setNameP1" type="text" maxlength="14" spellcheck="false" /></label>
+          <label class="set-field">Player 2 (local)<input id="setNameP2" type="text" maxlength="14" spellcheck="false" /></label>
+        </section>
+        <section class="set-block">
+          <h3>AUDIO &amp; FX</h3>
+          <label class="set-field">Volume <span id="volVal">50%</span><input id="setVolume" type="range" min="0" max="100" /></label>
+          <label class="set-toggle"><input id="setShake" type="checkbox" /> Screen shake</label>
+        </section>
+        <section class="set-block binds">
+          <h3>PLAYER 1 KEYS</h3>
+          <div class="bind-row"><span>Up</span><button class="bind" data-scheme="p1" data-act="up"></button></div>
+          <div class="bind-row"><span>Down</span><button class="bind" data-scheme="p1" data-act="down"></button></div>
+          <div class="bind-row"><span>Left</span><button class="bind" data-scheme="p1" data-act="left"></button></div>
+          <div class="bind-row"><span>Right</span><button class="bind" data-scheme="p1" data-act="right"></button></div>
+          <div class="bind-row"><span>Prev color</span><button class="bind" data-scheme="p1" data-act="prevColor"></button></div>
+          <div class="bind-row"><span>Next color</span><button class="bind" data-scheme="p1" data-act="nextColor"></button></div>
+        </section>
+        <section class="set-block binds">
+          <h3>PLAYER 2 KEYS <small>(local 2P)</small></h3>
+          <div class="bind-row"><span>Up</span><button class="bind" data-scheme="p2" data-act="up"></button></div>
+          <div class="bind-row"><span>Down</span><button class="bind" data-scheme="p2" data-act="down"></button></div>
+          <div class="bind-row"><span>Left</span><button class="bind" data-scheme="p2" data-act="left"></button></div>
+          <div class="bind-row"><span>Right</span><button class="bind" data-scheme="p2" data-act="right"></button></div>
+          <div class="bind-row"><span>Prev color</span><button class="bind" data-scheme="p2" data-act="prevColor"></button></div>
+          <div class="bind-row"><span>Next color</span><button class="bind" data-scheme="p2" data-act="nextColor"></button></div>
+        </section>
+      </div>
+      <p class="settings-note">Solo &amp; Online use Player 1 keys + mouse to aim/fire. Keys <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> always pick colors directly.</p>
+      <button class="play-btn" id="settingsSave">SAVE &amp; CLOSE</button>
+      <button class="ghost-btn" id="settingsReset">RESET TO DEFAULTS</button>
+    </div>
+  </div>
+
+  <!-- Versus winner -->
+  <div id="vsOverScreen" class="overlay hidden">
+    <div class="card">
+      <h1 class="logo" id="vsWinner">P1 WINS</h1>
+      <div class="result" id="vsStats"></div>
+      <button class="play-btn" id="vsAgainBtn">REMATCH</button>
+      <button class="ghost-btn" id="vsMenuBtn">MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/net.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

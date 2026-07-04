@@ -2,4 +2,9 @@
 node_modules
 .DS_Store
 .claude
-games/
+# Keep most games local-only; deploy just these three + the listing page
+games/*
+!games/index.html
+!games/chroma-rift/
+!games/gravity-wells/
+!games/sunstone/
