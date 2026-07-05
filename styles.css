@@ -47,18 +47,14 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   background-color: var(--void);
-  /* Chart paper: a bold RA/DEC grid over a fine sub-grid, with a drawn
-     star-chart overlay (ecliptic, equator, meridians, marginalia) on top. */
-  background-image:
-    url('assets/chart.svg'),
-    repeating-linear-gradient(90deg, transparent 0, transparent 39px, var(--grid-fine) 39px, var(--grid-fine) 40px),
-    repeating-linear-gradient(0deg, transparent 0, transparent 39px, var(--grid-fine) 39px, var(--grid-fine) 40px),
-    repeating-linear-gradient(90deg, transparent 0, transparent 79px, var(--grid-ra) 79px, var(--grid-ra) 80px),
-    repeating-linear-gradient(0deg, transparent 0, transparent 79px, var(--grid-dec) 79px, var(--grid-dec) 80px);
-  background-attachment: fixed, fixed, fixed, fixed, fixed;
-  background-repeat: no-repeat, repeat, repeat, repeat, repeat;
-  background-position: center, 0 0, 0 0, 0 0, 0 0;
-  background-size: cover, 40px 40px, 40px 40px, 80px 80px, 80px 80px;
+  /* A star chart: dense star field, curved celestial grid, dotted
+     constellation boundaries, and the ecliptic/equator phase lines —
+     all drawn in assets/chart.svg. */
+  background-image: url('assets/chart.svg');
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -255,6 +251,13 @@ p {
   opacity: 0.92;
   max-width: 66ch;
   margin: 0 0 1.25rem;
+}
+
+/* Text-only pages (about/resume have no chart): let the prose fill the
+   full plate width instead of being capped to one side. */
+.hero:not(:has(.chart)) p,
+.hero:not(:has(.chart)) .lede {
+  max-width: none;
 }
 
 .readout {
