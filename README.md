@@ -1,26 +1,22 @@
 # Blackbird
 
-A small personal site, built as an old celestial atlas — deep-space ground, gilt
-hairline frames, a faint RA/DEC coordinate grid, and a hand-charted constellation
-for a mark. No framework and no build step: just static HTML, one stylesheet, and a
-little vanilla JavaScript.
+A small personal site, built as a mix of both old and new astrophysics aesthetics.
 
 ## Pages
 
-- **Home** — the plate: a charted **Corvus** and a live time panel.
-- **About** — field notes.
-- **Resume** — a status plate.
-- **Random stuff** — a few small browser games and experiments. No installs, no accounts.
+- **Home** — the plate: a charted **Corvus** constellation and a live time panel
+- **About** — basic notes about me
+- **Resume** — a status plate, as I don't want to put my information on the web as of now
+- **Random stuff** — a few small browser games and experiments that I've made in the past
 
 ## Features
 
-- **Corvus constellation**, projected from J2000 RA/Dec — the four-star quadrilateral
+- **Corvus constellation**, projected from J2000 RA/Dec, the four-star quadrilateral
   ("the Sail": γ Gienah, β Kraz, δ Algorab, ε Minkar), each star sized by apparent magnitude.
 - **Three live clocks** beneath the chart: **solar** (mean solar / UTC), **sidereal**
   (Greenwich Mean Sidereal Time), and **dynamical** (Terrestrial Time). Set your
-  longitude in the home-page script (`LON`) for true local sidereal time.
-- **Responsive** — a single column on phones, two on wider screens.
-- **Respects `prefers-reduced-motion`** — entry and twinkle animations stand down.
+  longitude in the home-page script (`LON`) for true local sidereal time
+- **Responsive** — a single column on phones, two on wider screens
 
 ## Stack
 

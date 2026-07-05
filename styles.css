@@ -15,11 +15,9 @@
   /* — Rules & grid tuning (kept faint on purpose) — */
   --rule:        rgba(201,162,78,0.38);   /* gilt hairline frame */
   --rule-soft:   rgba(201,162,78,0.16);   /* inner double-rule */
-  --grid-ra:     rgba(110,167,157,0.13);  /* verdigris meridians (vertical) */
-  --grid-dec:    rgba(110,167,157,0.10);  /* verdigris parallels (horizontal) */
-  --grid-fine:   rgba(110,167,157,0.05);  /* finer sub-grid (graph-paper density) */
-  --ecliptic:    rgba(201,162,78,0.14);   /* gilt ecliptic diagonal */
-  --meridian-2:  rgba(110,167,157,0.12);  /* extra verdigris chart diagonals */
+  --grid-ra:     rgba(110,167,157,0.15);  /* verdigris meridians (vertical) */
+  --grid-dec:    rgba(110,167,157,0.11);  /* verdigris parallels (horizontal) */
+  --grid-fine:   rgba(110,167,157,0.06);  /* finer sub-grid (graph-paper density) */
 
   /* — Type — */
   --font-display: "Marcellus", "Trajan Pro", Georgia, "Times New Roman", serif;
@@ -49,19 +47,18 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   background-color: var(--void);
-  /* Chart paper: a fine sub-grid under the RA/DEC grid, crossed by three
-     faint chart diagonals — reads like a plotted, written-on star map. */
+  /* Chart paper: a bold RA/DEC grid over a fine sub-grid, with a drawn
+     star-chart overlay (ecliptic, equator, meridians, marginalia) on top. */
   background-image:
+    url('assets/chart.svg'),
     repeating-linear-gradient(90deg, transparent 0, transparent 39px, var(--grid-fine) 39px, var(--grid-fine) 40px),
     repeating-linear-gradient(0deg, transparent 0, transparent 39px, var(--grid-fine) 39px, var(--grid-fine) 40px),
     repeating-linear-gradient(90deg, transparent 0, transparent 79px, var(--grid-ra) 79px, var(--grid-ra) 80px),
-    repeating-linear-gradient(0deg, transparent 0, transparent 79px, var(--grid-dec) 79px, var(--grid-dec) 80px),
-    linear-gradient(-12deg, transparent calc(50% - 0.5px), var(--ecliptic) 50%, transparent calc(50% + 0.5px)),
-    linear-gradient(7deg, transparent calc(27% - 0.5px), var(--meridian-2) 27%, transparent calc(27% + 0.5px)),
-    linear-gradient(-6deg, transparent calc(73% - 0.5px), var(--meridian-2) 73%, transparent calc(73% + 0.5px));
-  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed, fixed;
-  background-repeat: repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
-  background-size: 40px 40px, 40px 40px, 80px 80px, 80px 80px, 100% 100%, 100% 100%, 100% 100%;
+    repeating-linear-gradient(0deg, transparent 0, transparent 79px, var(--grid-dec) 79px, var(--grid-dec) 80px);
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  background-repeat: no-repeat, repeat, repeat, repeat, repeat;
+  background-position: center, 0 0, 0 0, 0 0, 0 0;
+  background-size: cover, 40px 40px, 40px 40px, 80px 80px, 80px 80px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -394,6 +391,13 @@ p {
   animation: twinkle 4s ease-in-out infinite;
 }
 .chart-star.chart-star--note { fill: var(--rubric); }
+
+/* Home constellation only: bright, glowing gold orbs.
+   Scoped to .chart-svg so the flat card glyphs are unaffected. */
+.chart-svg .chart-star {
+  fill: url(#starGlow);
+  filter: url(#starHalo);
+}
 .chart-star:nth-of-type(2) { animation-delay: 0.6s; }
 .chart-star:nth-of-type(3) { animation-delay: 1.2s; }
 .chart-star:nth-of-type(4) { animation-delay: 1.8s; }
@@ -405,14 +409,15 @@ p {
   fill: var(--faded-ink);
 }
 
-/* Instrument time-panel beneath the chart: three timescales */
+/* Instrument time-panel BELOW the chart box: three timescales */
 .chart-times {
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
-  margin-top: 0.7rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--rule-soft);
+  width: 100%;
+  max-width: 440px;
+  margin: 0.8rem auto 0;
+  padding: 0 0.15rem;
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.1em;

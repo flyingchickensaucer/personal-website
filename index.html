@@ -40,27 +40,41 @@
             <a class="chart-btn chart-btn--ghost" href="about.html">Read the log</a>
           </div>
         </div>
-        <div class="chart">
-          <svg class="chart-svg" viewBox="0 0 440 320" aria-hidden="true">
-            <!-- Corvus, "the Sail": the four-star quadrilateral, edges
-                 δ–γ–ε–β (Algorab–Gienah–Minkar–Kraz). Positions projected
-                 from J2000 RA/Dec at equal scale. α (Alchiba, mag 4) lies
-                 outside the figure and is omitted. -->
-            <path class="chart-line" d="M161,42 L273,76 L319,249 L125,276 Z" fill="none" />
+        <div class="chart-col">
+          <div class="chart">
+            <svg class="chart-svg" viewBox="0 0 440 320" aria-hidden="true">
+              <defs>
+                <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#FFF7E4" />
+                  <stop offset="42%" stop-color="#F6C868" />
+                  <stop offset="100%" stop-color="#DE9430" />
+                </radialGradient>
+                <filter id="starHalo" x="-120%" y="-120%" width="340%" height="340%">
+                  <feGaussianBlur stdDeviation="3" result="b" />
+                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
 
-            <!-- Stars: radius encodes magnitude (brighter = larger).
-                 Gienah (γ, mag 2.59) is the brightest — the star of note. -->
-            <circle class="chart-star chart-star--note" cx="273" cy="76"  r="6" />   <!-- γ Gienah  2.59 -->
-            <circle class="chart-star" cx="125" cy="276" r="5.4" />                  <!-- β Kraz    2.65 -->
-            <circle class="chart-star" cx="161" cy="42"  r="4.4" />                  <!-- δ Algorab 2.95 -->
-            <circle class="chart-star" cx="319" cy="249" r="4.2" />                  <!-- ε Minkar  3.02 -->
+              <!-- Corvus: the quadrilateral δ–γ–ε–β plus the spur ε–α (Alchiba).
+                   Positions projected from J2000 RA/Dec at equal scale. -->
+              <path class="chart-line" d="M167,44 L256,72 L291,209 L138,230 Z" fill="none" />
+              <path class="chart-line" d="M291,209 L302,265" fill="none" />
 
-            <!-- Greek Bayer designations -->
-            <text class="chart-label" x="283" y="72">γ</text>
-            <text class="chart-label" x="101" y="286">β</text>
-            <text class="chart-label" x="140" y="38">δ</text>
-            <text class="chart-label" x="329" y="252">ε</text>
-          </svg>
+              <!-- Stars: radius encodes magnitude (brighter = larger). -->
+              <circle class="chart-star" cx="256" cy="72"  r="7" />     <!-- γ Gienah  2.59 -->
+              <circle class="chart-star" cx="138" cy="230" r="6.2" />   <!-- β Kraz    2.65 -->
+              <circle class="chart-star" cx="167" cy="44"  r="5.2" />   <!-- δ Algorab 2.95 -->
+              <circle class="chart-star" cx="291" cy="209" r="5" />     <!-- ε Minkar  3.02 -->
+              <circle class="chart-star" cx="302" cy="265" r="3.6" />   <!-- α Alchiba 4.02 -->
+
+              <!-- Greek Bayer designations -->
+              <text class="chart-label" x="266" y="64">γ</text>
+              <text class="chart-label" x="148" y="36">δ</text>
+              <text class="chart-label" x="114" y="238">β</text>
+              <text class="chart-label" x="270" y="206">ε</text>
+              <text class="chart-label" x="311" y="270">α</text>
+            </svg>
+          </div>
           <div class="chart-times">
             <span>Solar <b id="t-sol">--:--:--</b></span>
             <span>Sidereal <b id="t-sid">--:--:--</b></span>
