@@ -76,9 +76,9 @@
             </svg>
           </div>
           <div class="chart-times">
-            <span>Solar <b id="t-sol">--:--:--</b></span>
-            <span>Sidereal <b id="t-sid">--:--:--</b></span>
-            <span>Dynamical <b id="t-dyn">--:--:--</b></span>
+            <span title="Local apparent solar time at Greenwich — what a sundial there reads">Solar <b id="t-sol">--:--:--</b></span>
+            <span title="Local apparent sidereal time at Greenwich — the hour angle of the vernal equinox">Sidereal <b id="t-sid">--:--:--</b></span>
+            <span title="Terrestrial (Dynamical) Time — a uniform scale, the same everywhere">Dynamical <b id="t-dyn">--:--:--</b></span>
           </div>
         </div>
       </section>
@@ -89,13 +89,17 @@
 
   <script>
     (function () {
-      // Longitude in degrees East (West negative). 0 = Greenwich, so the
-      // sidereal readout is GMST. Set this to your longitude for true LST.
-      var LON = 0;
+      var D2R = Math.PI / 180;
       // Terrestrial (Dynamical) Time offset from UTC, in seconds:
       // TT = TAI + 32.184s, and TAI − UTC = 37 leap seconds (since 2017).
       var TT_MINUS_UTC = 69.184;
 
+      // Longitude east, in degrees. Solar and sidereal time are both defined
+      // by the observer's meridian. Fixed to Greenwich.
+      var lonDeg = 0;
+
+      function norm360(x) { x = x % 360; return x < 0 ? x + 360 : x; }
+      function norm180(x) { return ((x + 180) % 360 + 360) % 360 - 180; }
       function pad(n) { return String(n).padStart(2, '0'); }
       function clockOf(date) {
         return pad(date.getUTCHours()) + ':' + pad(date.getUTCMinutes()) + ':' + pad(date.getUTCSeconds());
@@ -111,14 +115,33 @@
 
       function tick() {
         var now = new Date();
-        // Solar — mean solar time (UTC).
-        set('t-sol', clockOf(now));
-        // Sidereal — Greenwich Mean Sidereal Time (+ longitude for local).
         var jd = now.getTime() / 86400000 + 2440587.5;
-        var d = jd - 2451545.0;
-        var gmst = 18.697374558 + 24.06570982441908 * d;
-        set('t-sid', hms(gmst + LON / 15));
-        // Dynamical — Terrestrial Time.
+        var n = jd - 2451545.0; // days since J2000.0
+        var utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 +
+          now.getUTCSeconds() / 3600 + now.getUTCMilliseconds() / 3.6e6;
+
+        // Sun's apparent right ascension and the equation of time (low-precision
+        // solar theory, Astronomical Almanac). L = mean longitude, g = mean
+        // anomaly, lam = apparent ecliptic longitude, all in degrees.
+        var L = norm360(280.460 + 0.9856474 * n);
+        var g = norm360(357.528 + 0.9856003 * n);
+        var lam = L + 1.915 * Math.sin(g * D2R) + 0.020 * Math.sin(2 * g * D2R);
+        var eps = 23.439 - 0.0000004 * n;
+        var alpha = Math.atan2(Math.cos(eps * D2R) * Math.sin(lam * D2R), Math.cos(lam * D2R)) / D2R;
+        var eotHours = norm180(L - alpha) / 15; // apparent − mean solar, in hours
+
+        // Solar — local apparent solar time (a sundial at your longitude):
+        // UT (mean solar at Greenwich) + longitude + equation of time.
+        set('t-sol', hms(utcHours + lonDeg / 15 + eotHours));
+
+        // Sidereal — local apparent sidereal time: GMST, plus the equation of
+        // the equinoxes (USNO approximation), plus longitude.
+        var gmst = 18.697374558 + 24.06570982441908 * n;
+        var eqeq = -0.000319 * Math.sin((125.04 - 0.052954 * n) * D2R)
+          - 0.000024 * Math.sin(2 * L * D2R); // hours
+        set('t-sid', hms(gmst + eqeq + lonDeg / 15));
+
+        // Dynamical — Terrestrial Time. A uniform scale; not a local quantity.
         set('t-dyn', clockOf(new Date(now.getTime() + TT_MINUS_UTC * 1000)));
       }
       tick();
