@@ -1,0 +1,722 @@
+:root {
+  /* — Ground & panels (dark graphite drafting sheet, just a hint of blue) — */
+  --ground:      #14191F;   /* sheet / page field */
+  --panel:       #1C232B;   /* raised card / inset drawing */
+  --panel-2:     #10141A;   /* deeper inset */
+
+  /* — Draughting inks — */
+  --ink:         #F5F1E4;   /* PRIMARY text — warm drafting cream */
+  --ink-soft:    #C2BDA8;   /* muted / caption / annotation — warm stone */
+  --cyan:        #7FCDEA;   /* linework highlight, links, ornament */
+  --cyan-bright: #B4E4F7;   /* focus ring */
+  --redline:     #E8674F;   /* rare accent: active nav, redline callout */
+  --amber:       #F0C987;   /* warm accent: buttons, marks, doodles */
+  --amber-bright:#F7DCA9;   /* warm hover */
+
+  /* — Rules & grid (kept faint on purpose) — */
+  --line:        rgba(240,233,214,0.42);  /* cream hairline sheet border */
+  --line-soft:   rgba(240,233,214,0.16);  /* inner double-rule */
+  --grid-major:  rgba(226,218,196,0.11);  /* graph-paper major lines */
+  --grid-minor:  rgba(226,218,196,0.05);  /* graph-paper minor lines */
+
+  /* — Type — */
+  --font-display: "Chakra Petch", "Bahnschrift", "DIN Alternate", system-ui, sans-serif;
+  --font-body:    "Rajdhani", "Chakra Petch", system-ui, sans-serif;
+  --font-mono:    "Share Tech Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  /* — Metrics — */
+  --maxw:        1080px;
+  --frame-inset: clamp(0.75rem, 2.4vw, 2rem);  /* sheet distance from viewport edge */
+  --pad-x:       clamp(1.1rem, 4vw, 2.6rem);   /* content inner padding */
+  --focus:       var(--cyan-bright);
+}
+
+/* ======================================================================
+   RESET / BASE
+   ====================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  background-color: var(--ground);
+  /* A drafting sheet: graph-paper grid (CSS) beneath faint technical
+     linework — gears, a protractor, an orthographic plan (assets/blueprint.svg). */
+  background-image:
+    url('assets/blueprint.svg'),
+    repeating-linear-gradient(0deg,  var(--grid-major) 0, var(--grid-major) 1px, transparent 1px, transparent 130px),
+    repeating-linear-gradient(90deg, var(--grid-major) 0, var(--grid-major) 1px, transparent 1px, transparent 130px),
+    repeating-linear-gradient(0deg,  var(--grid-minor) 0, var(--grid-minor) 1px, transparent 1px, transparent 26px),
+    repeating-linear-gradient(90deg, var(--grid-minor) 0, var(--grid-minor) 1px, transparent 1px, transparent 26px);
+  background-attachment: fixed;
+  /* svg pinned left-bottom and scaled to viewport HEIGHT (auto 100%), the
+     same rule the moving machinery layer uses — so the linework and the
+     gears line up unit-for-unit at every window size and never drift over
+     each other. On wide screens the sheet's right side is plain grid. */
+  background-position: left bottom, center, center, center, center;
+  background-repeat: no-repeat, repeat, repeat, repeat, repeat;
+  background-size: auto 100%, auto, auto, auto, auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; height: auto; }
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+a:hover { color: var(--amber-bright); text-decoration: underline; text-underline-offset: 3px; }
+
+::selection { background: rgba(240, 201, 135, 0.28); }
+
+/* Global visible focus — never removed */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ======================================================================
+   SHEET FRAME (.plate) — the constant "drawing sheet" identity
+   ====================================================================== */
+.plate {
+  position: relative;
+  min-height: 100vh;
+  margin: var(--frame-inset);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+/* inner double rule */
+.plate::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--line-soft);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* dimension ticks along top & bottom inner margins */
+.plate::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 12px;
+  bottom: 12px;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(90deg, var(--line) 0, var(--line) 1px, transparent 1px, transparent 28px),
+    repeating-linear-gradient(90deg, var(--line) 0, var(--line) 1px, transparent 1px, transparent 28px);
+  background-repeat: no-repeat, no-repeat;
+  background-position: top left, bottom left;
+  background-size: 100% 6px, 100% 6px;
+}
+
+/* numbers read off the top scale (built by assets/scale.js) */
+.plate-scale {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 19px;
+  height: 10px;
+  pointer-events: none;
+  z-index: 0;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: var(--line);
+}
+.plate-scale span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  opacity: 0.7;
+}
+
+/* keep real content above the frame pseudo-layers */
+.masthead, main, .titleblock { position: relative; z-index: 2; }
+
+/* scroll-driven meshing gears — a fixed layer behind the sheet content,
+   above the graph-paper ground (built by assets/scroll-gears.js) */
+.gear-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.gear-bg svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ======================================================================
+   NAV (.masthead / .chart-nav / .seal / .seal-mark / .nav-links / .active)
+   ====================================================================== */
+.masthead {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.chart-nav {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0.9rem var(--pad-x);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.seal:hover { color: var(--ink); text-decoration: none; opacity: 0.9; }
+
+.seal-mark {
+  width: 30px;
+  height: 30px;
+  display: block;
+  color: var(--amber);
+  animation: seal-spin 42s linear infinite;  /* the little gear idles along */
+}
+@keyframes seal-spin { to { transform: rotate(360deg); } }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.15rem, 1.2vw, 0.6rem);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+.nav-links a {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  padding: 0.55rem 0.7rem;
+}
+.nav-links a:hover { color: var(--ink); text-decoration: none; }
+
+.nav-links a.active {
+  color: var(--redline);
+  position: relative;
+}
+.nav-links a.active::after {
+  content: "";
+  position: absolute;
+  left: 0.7rem;
+  right: 0.7rem;
+  bottom: 0.32rem;
+  height: 2px;
+  background: var(--amber);
+}
+
+/* cross-link to the star-chart edition */
+.nav-links a.alt-edition { color: var(--cyan); }
+.nav-links a.alt-edition:hover { color: var(--amber-bright); }
+
+/* ======================================================================
+   LAYOUT / MAIN
+   ====================================================================== */
+main {
+  flex: 1 0 auto;
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) var(--pad-x) clamp(3rem, 8vw, 5rem);
+}
+
+/* ======================================================================
+   TYPOGRAPHY
+   ====================================================================== */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 1.1rem;
+}
+.eyebrow::before {
+  content: "\25B8\00A0";  /* ▸ + nbsp */
+  color: var(--amber);
+}
+
+.plate-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.4rem, 6.4vw, 4rem);
+  line-height: 1.04;
+  letter-spacing: 0.005em;
+  color: var(--ink);
+  margin: 0 0 1.1rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  margin: 2.75rem 0 0.6rem;
+}
+h2::before {
+  content: "// ";
+  color: var(--amber);
+}
+
+p {
+  font-family: var(--font-body);
+  font-size: clamp(1.08rem, 1.4vw, 1.24rem);
+  line-height: 1.62;
+  color: var(--ink);
+  max-width: 70ch;
+  margin: 0 0 1rem;
+}
+
+.lede {
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--ink);
+  opacity: 0.94;
+  max-width: 66ch;
+  margin: 0 0 1.25rem;
+}
+
+/* Text-only pages let the prose fill the full sheet width. */
+.hero:not(:has(.draw)) p,
+.hero:not(:has(.draw)) .lede {
+  max-width: none;
+}
+
+.readout {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  max-width: none;
+  margin: 0 0 1rem;
+}
+
+/* ======================================================================
+   HERO
+   ====================================================================== */
+.hero { animation: rise 0.5s ease both; }
+
+/* Home: two-column grid (text + drawing). */
+.hero:has(.draw),
+.hero.hero--home {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(1.5rem, 5vw, 3.5rem);
+  align-items: center;
+}
+
+/* staggered entry for direct children */
+.hero > * { animation: rise 0.5s ease both; }
+.hero > *:nth-child(1) { animation-delay: 0.00s; }
+.hero > *:nth-child(2) { animation-delay: 0.06s; }
+.hero > *:nth-child(3) { animation-delay: 0.12s; }
+.hero > *:nth-child(4) { animation-delay: 0.18s; }
+.hero > *:nth-child(5) { animation-delay: 0.24s; }
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 1.4rem;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ======================================================================
+   BUTTONS (.chart-btn / .chart-btn--ghost)
+   ====================================================================== */
+.chart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.15rem;
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  background: transparent;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.chart-btn span { transition: transform 0.18s ease; display: inline-block; }
+.chart-btn:hover,
+.chart-btn:focus-visible {
+  background: var(--amber-bright);
+  color: var(--ground);
+  border-color: var(--amber-bright);
+  text-decoration: none;
+}
+.chart-btn:hover span,
+.chart-btn:focus-visible span { transform: translateX(3px); }
+
+.chart-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+.chart-btn--ghost:hover,
+.chart-btn--ghost:focus-visible {
+  background: transparent;
+  color: var(--amber-bright);
+  border-color: transparent;
+}
+
+/* ======================================================================
+   SIGNATURE — THE BLACKBIRD PLAN (.draw / .draw-svg + drawing primitives)
+   ====================================================================== */
+.draw {
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 0.85rem;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  position: relative;
+  /* inset drawing grid */
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 31px, var(--grid-minor) 31px, var(--grid-minor) 32px),
+    repeating-linear-gradient(0deg,  transparent 0, transparent 31px, var(--grid-minor) 31px, var(--grid-minor) 32px);
+}
+
+.draw-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 420 / 500;
+  overflow: visible;
+}
+
+/* aircraft outline — drawn in like ink from a plotter */
+.draw-outline {
+  fill: rgba(127,205,234,0.05);
+  stroke: var(--cyan);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 2400;
+  stroke-dashoffset: 2400;
+  animation: draw-in 1.4s ease forwards;
+}
+.draw-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+.draw-fill { fill: rgba(234,242,248,0.10); stroke: var(--ink); stroke-width: 0.8; }
+
+/* dashed centre / construction lines */
+.draw-center {
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 0.8;
+  stroke-dasharray: 10 4 2 4;
+  opacity: 0.55;
+}
+
+/* dimension lines (thin, with arrowheads via markers) + witness lines */
+.draw-dim {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 0.8;
+  marker-start: url(#arrow);
+  marker-end: url(#arrow);
+}
+.draw-witness { fill: none; stroke: var(--ink-soft); stroke-width: 0.6; opacity: 0.7; }
+.draw-dim-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+
+/* leader callouts: circled numbers */
+.draw-leader { fill: none; stroke: var(--cyan); stroke-width: 0.8; opacity: 0.8; }
+.draw-tag circle { fill: var(--panel-2); stroke: var(--cyan); stroke-width: 1; }
+.draw-tag text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--cyan);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Instrument telemetry panel BELOW the drawing */
+.draw-times {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 420px;
+  margin: 0.8rem auto 0;
+  padding: 0 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.draw-times span { display: flex; flex-direction: column; gap: 0.22rem; }
+.draw-times b {
+  color: var(--ink);
+  font-weight: 400;
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+}
+
+@keyframes draw-in { to { stroke-dashoffset: 0; } }
+
+/* ======================================================================
+   CATALOGUE (random stuff) — .catalogue / .catalogue-grid / .part-card
+   ====================================================================== */
+.catalogue { margin-top: clamp(2rem, 5vw, 3rem); }
+
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.part-card {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 1.25rem 1.3rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+/* corner tick marks echoing the sheet frame */
+.part-card::before,
+.part-card::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+}
+.part-card::before {
+  top: 7px; left: 7px;
+  border-top: 1px solid var(--cyan);
+  border-left: 1px solid var(--cyan);
+}
+.part-card::after {
+  bottom: 7px; right: 7px;
+  border-bottom: 1px solid var(--cyan);
+  border-right: 1px solid var(--cyan);
+}
+.part-card:hover {
+  border-color: var(--cyan);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+.part-card:hover::before,
+.part-card:hover::after { border-color: var(--amber); }
+
+.part-card header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.part-glyph { width: 30px; height: 30px; flex-shrink: 0; color: var(--ink-soft); }
+.part-glyph * { transition: stroke 0.18s ease, fill 0.18s ease; }
+.part-glyph [fill="none"], .part-glyph line, .part-glyph circle, .part-glyph path, .part-glyph polyline {
+  vector-effect: non-scaling-stroke;
+}
+.part-card:hover .part-glyph { color: var(--cyan-bright); }
+
+.part-desig {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.part-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.part-card p {
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  color: var(--ink-soft);
+  max-width: none;
+  margin: 0;
+  flex: 1;
+}
+
+.part-spec {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.enter {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  margin-top: 0.15rem;
+}
+.enter:hover { color: var(--amber-bright); text-decoration: none; }
+.enter span { display: inline-block; transition: transform 0.18s ease; }
+.enter:hover span,
+.enter:focus-visible span { transform: translateX(3px); }
+
+/* ======================================================================
+   RESUME — .status-plate / .gearset / .status-light
+   ====================================================================== */
+.status-plate {
+  margin-top: 2.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 2rem 1.8rem;
+  max-width: 44ch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.gearset { width: 150px; height: 120px; color: var(--cyan); }
+.gearset .gear { transform-box: fill-box; transform-origin: center; }
+.gearset .gear-a { animation: spin 24s linear infinite; }
+/* meshed gear turns the opposite way, slightly faster (smaller) */
+.gearset .gear-b { animation: spin-rev 16s linear infinite; }
+
+@keyframes spin      { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
+@keyframes spin-rev  { from { transform: rotate(0deg);   } to { transform: rotate(-360deg); } }
+
+.status-plate .readout { margin: 0; }
+.status-plate .readout.sub { color: var(--ink-soft); }
+
+.status-light {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  margin-right: 0.4rem;
+  vertical-align: baseline;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ======================================================================
+   TITLE BLOCK (.titleblock) — engineering-drawing footer
+   ====================================================================== */
+.titleblock {
+  flex-shrink: 0;
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--pad-x) 2.5rem;
+}
+.titleblock-grid {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+}
+.tb-cell {
+  flex: 1 1 auto;
+  min-width: 92px;
+  padding: 0.5rem 0.8rem;
+  border-right: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.tb-cell:last-child { border-right: none; }
+.tb-cell.tb-title { flex: 2 1 200px; }
+.tb-key {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.tb-val {
+  font-size: 0.86rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.tb-val.accent { color: var(--cyan); }
+
+/* ======================================================================
+   RESPONSIVE
+   ====================================================================== */
+@media (max-width: 760px) {
+  .hero:has(.draw),
+  .hero.hero--home { grid-template-columns: 1fr; }
+  .hero:has(.draw) .draw,
+  .hero.hero--home .draw { max-width: 360px; margin-top: 0.5rem; }
+}
+
+@media (max-width: 560px) {
+  .chart-nav { justify-content: center; text-align: center; }
+  .nav-links { justify-content: center; }
+  .catalogue-grid { grid-template-columns: 1fr; }
+  .tb-cell { flex-basis: 40%; }
+}
+
+/* ======================================================================
+   REDUCED MOTION
+   ====================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .hero > *,
+  .status-light,
+  .seal-mark,
+  .gearset .gear { animation: none; }
+  .draw-outline { stroke-dashoffset: 0; animation: none; }
+}

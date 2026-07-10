@@ -1,22 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
-  <!-- ===== curved celestial coordinate grid ===== -->
-  <!-- Dec parallels (gently bowed) -->
+  <!-- ===== celestial coordinate grid, drawn as a globe (graticule) ===== -->
+  <!-- Dec parallels: equator straight, others bow away from it like the
+       latitude rings of a sphere seen head-on. -->
   <g fill="none" stroke="#6EA79D" stroke-opacity="0.15" stroke-width="1">
-    <path d="M-40,140 Q800,105 1640,140" />
-    <path d="M-40,280 Q800,245 1640,280" />
-    <path d="M-40,420 Q800,385 1640,420" />
-    <path d="M-40,560 Q800,525 1640,560" />
-    <path d="M-40,700 Q800,665 1640,700" />
-    <path d="M-40,840 Q800,805 1640,840" />
+    <path d="M-120,140 Q800,-40 1720,140" />
+    <path d="M-120,260 Q800,140 1720,260" />
+    <path d="M-120,380 Q800,320 1720,380" />
+    <path d="M-120,500 L1720,500" />
+    <path d="M-120,620 Q800,680 1720,620" />
+    <path d="M-120,740 Q800,860 1720,740" />
+    <path d="M-120,860 Q800,1040 1720,860" />
   </g>
-  <!-- RA meridians (fanning toward the pole above) -->
+  <!-- RA meridians: longitude arcs converging on the poles above and below,
+       central meridian straight, the rest bulging out symmetrically. -->
   <g fill="none" stroke="#6EA79D" stroke-opacity="0.15" stroke-width="1">
-    <path d="M60,1040 C260,540 460,180 700,-320" />
-    <path d="M340,1040 C470,540 600,180 720,-320" />
-    <path d="M620,1040 C660,540 700,180 740,-320" />
-    <path d="M900,1040 C860,540 800,180 760,-320" />
-    <path d="M1180,1040 C1060,540 900,180 780,-320" />
-    <path d="M1460,1040 C1270,540 1020,180 800,-320" />
+    <path d="M800,-320 Q50,500 800,1320" />
+    <path d="M800,-320 Q350,500 800,1320" />
+    <path d="M800,-320 Q650,500 800,1320" />
+    <path d="M800,-320 L800,1320" />
+    <path d="M800,-320 Q950,500 800,1320" />
+    <path d="M800,-320 Q1250,500 800,1320" />
+    <path d="M800,-320 Q1550,500 800,1320" />
   </g>
 
   <!-- ===== dotted constellation boundaries ===== -->
@@ -26,11 +30,11 @@
     <path d="M-20,540 C360,585 720,505 1120,548 C1360,572 1520,520 1640,552" />
   </g>
 
-  <!-- ===== phase lines: celestial equator + ecliptic (big crossing waves) ===== -->
-  <path d="M-100,500 C300,830 520,830 800,500 C1080,170 1300,170 1700,500" fill="none"
-        stroke="#6EA79D" stroke-opacity="0.15" stroke-width="1.6" stroke-linecap="round" />
-  <path d="M-100,500 C300,170 520,170 800,500 C1080,830 1300,830 1700,500" fill="none"
+  <!-- ===== great circles crossing the globe: ecliptic + galactic equator ===== -->
+  <path d="M-120,680 Q800,320 1720,380" fill="none"
         stroke="#C9A24E" stroke-opacity="0.20" stroke-width="2" stroke-linecap="round" />
+  <path d="M-120,340 Q800,700 1720,640" fill="none"
+        stroke="#6EA79D" stroke-opacity="0.15" stroke-width="1.6" stroke-linecap="round" />
 
   <!-- ===== deep-sky markers (open circles) ===== -->
   <g fill="none" stroke="#C9A24E" stroke-opacity="0.16" stroke-width="1.1">

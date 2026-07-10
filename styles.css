@@ -114,6 +114,27 @@ a:hover { color: var(--gilt-bright); text-decoration: underline; text-underline-
   background-size: 100% 6px, 100% 6px;
 }
 
+/* numbers read off the top degree ruler (built by assets/scale.js) */
+.plate-scale {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 19px;
+  height: 10px;
+  pointer-events: none;
+  z-index: 0;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: var(--rule);
+}
+.plate-scale span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  opacity: 0.6;
+}
+
 /* keep real content above the frame pseudo-layers */
 .masthead, main, .colophon { position: relative; z-index: 2; }
 
@@ -188,6 +209,10 @@ a:hover { color: var(--gilt-bright); text-decoration: underline; text-underline-
   height: 2px;
   background: var(--gilt);
 }
+
+/* cross-link to the blueprint edition */
+.nav-links a.alt-edition { color: var(--gilt); }
+.nav-links a.alt-edition:hover { color: var(--gilt-bright); }
 
 /* ======================================================================
    LAYOUT / MAIN

@@ -3,33 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>About — Blackbird</title>
+  <title>About — Blackbird — Blueprint</title>
   <meta name="description" content="A little about me." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Marcellus+SC&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="plate">
     <header class="masthead">
       <nav class="chart-nav">
-        <a class="seal" href="index.html"><img class="seal-mark" src="assets/watercolor.jpg" alt="Blackbird" width="28" height="28" />BLACKBIRD</a>
+        <a class="seal" href="index.html">
+          <svg class="seal-mark" viewBox="0 0 30 30" aria-hidden="true">
+            <g fill="none" stroke="currentColor">
+              <circle cx="15" cy="15" r="10" stroke-width="4" stroke-dasharray="2.6 3.25" />
+              <circle cx="15" cy="15" r="9" stroke-width="1" />
+              <circle cx="15" cy="15" r="3.2" stroke-width="1.3" />
+            </g>
+          </svg>
+          BLACKBIRD
+        </a>
         <ul class="nav-links">
           <li><a href="index.html">home</a></li>
           <li><a class="active" href="about.html">about</a></li>
           <li><a href="resume.html">resume</a></li>
-          <li><a href="games/index.html">random stuff</a></li>
-          <li><a class="alt-edition" href="blueprint/about.html">blueprint ↗</a></li>
+          <li><a href="projects.html">random stuff</a></li>
+          <li><a class="alt-edition" href="../about.html">star chart ↗</a></li>
         </ul>
       </nav>
     </header>
 
     <main>
       <section class="hero">
-        <p class="eyebrow">FIELD NOTES · ABOUT ME</p>
+        <p class="eyebrow">Field Notes · About Me</p>
         <h1 class="plate-title">Hey.</h1>
-        <p class="lede">Hi, I'm Blackbird. Fun fact, while I do have a lot of crow imagery on this page, including the constellation, this is in fact, not my namesake. Feel free to take a guess as to what it really is.</p>
+        <p class="lede">Hi, I'm Blackbird. On this side of the site we have my actual namesake, the SR-71 Blackbird.</p>
 
         <p>I've been building whatever for a while now. Mostly small games, sometimes a tool I wanted and couldn't find, once in a while something I made just to see whether it would work. I'm actually much more of a hardware person, believe it or not. Maybe I'll put some of that up here at some point.</p>
 
@@ -40,8 +49,18 @@
       </section>
     </main>
 
-    <footer class="colophon">© 2026 Blackbird · R.A. 12h 27m / DEC −18°</footer>
+    <footer class="titleblock">
+      <div class="titleblock-grid">
+        <div class="tb-cell tb-title"><span class="tb-key">Title</span><span class="tb-val">About</span></div>
+        <div class="tb-cell"><span class="tb-key">Dwg No</span><span class="tb-val accent">BB-002</span></div>
+        <div class="tb-cell"><span class="tb-key">Scale</span><span class="tb-val">1:1</span></div>
+        <div class="tb-cell"><span class="tb-key">Rev</span><span class="tb-val">A</span></div>
+        <div class="tb-cell"><span class="tb-key">Drawn</span><span class="tb-val">Blackbird</span></div>
+        <div class="tb-cell"><span class="tb-key">Sheet</span><span class="tb-val">2 / 4</span></div>
+      </div>
+    </footer>
   </div>
   <script src="assets/scale.js"></script>
+  <script src="assets/scroll-gears.js"></script>
 </body>
 </html>
